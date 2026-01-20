@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import LoginForm from "@/app/components/LoginForm";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Vectra | Iniciar Sesión",
@@ -37,7 +38,17 @@ export default function LoginPage() {
       {/* Tarjeta del Formulario */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-[#4a4a4a] py-8 px-4 shadow-2xl sm:rounded-xl sm:px-10 border border-white/5 backdrop-blur-sm">
-          <LoginForm />
+          <Suspense
+            fallback={
+              <div className="flex justify-center py-10">
+                <div className="text-white/50 text-sm animate-pulse">
+                  Cargando formulario...
+                </div>
+              </div>
+            }
+          >
+            <LoginForm />
+          </Suspense>
 
           <div className="mt-6">
             <div className="relative">
