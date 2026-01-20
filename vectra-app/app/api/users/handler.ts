@@ -8,9 +8,9 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 export async function handlerCreateUser(req: Request) {
   try {
     const body = await req.json();
-    const { nombre, email, password } = body;
+    const { name, email, password } = body;
 
-    if (!nombre || !email || !password) {
+    if (!name || !email || !password) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -33,7 +33,7 @@ export async function handlerCreateUser(req: Request) {
     // Inserta usuario
     const result = await sql<User[]>`
       INSERT INTO users (name, email, password)
-      VALUES (${nombre}, ${email}, ${hashedPassword})
+      VALUES (${name}, ${email}, ${hashedPassword})
       RETURNING *
     `;
 

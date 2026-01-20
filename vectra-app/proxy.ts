@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Middleware de autenticación de NextAuth
 export default NextAuth(authConfig).auth;
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const session = await auth();
   const url = req.nextUrl.clone();
   const pathname = req.nextUrl.pathname;

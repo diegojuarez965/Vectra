@@ -10,7 +10,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 // Validación de registro de usuario
 const UserSchema = z.object({
   id: z.string(),
-  nombre: z.string().min(1, "Por favor ingrese un nombre"),
+  name: z.string().min(1, "Por favor ingrese un nombre"),
   email: z.string().email("Por favor ingrese un correo electrónico válido"),
   password: z
     .string()
@@ -40,7 +40,7 @@ export async function registerUser(
 
   // Validamos los campos usando zod
   const validatedFields = CreateUser.safeParse({
-    nombre: formData.get("name"),
+    name: formData.get("name"),
     email: formData.get("email"),
     password,
   });
@@ -59,17 +59,17 @@ export async function registerUser(
       errors: {
         confirmPassword: ["Las contraseñas no coinciden"],
       },
-      message: "Las contraseñas no coinciden.",
+      message: "Faltan campos o hay errores de validación.",
     };
   }
 
-  const { nombre, email } = validatedFields.data;
+  const { name, email } = validatedFields.data;
 
   try {
     const res = await fetch(`${baseUrl}/api/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, email, password }),
+      body: JSON.stringify({ name, email, password }),
     });
 
     if (!res.ok) {
