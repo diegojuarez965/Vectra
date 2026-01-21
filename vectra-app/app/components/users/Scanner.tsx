@@ -88,6 +88,8 @@ export default function Scanner() {
       ) {
         const video = webcamRef.current.video;
 
+        // OPTIMIZACIÓN DE FRAME:
+        // Verificamos dimensiones > 0 para evitar errores al cambiar de cámara
         const isValidFrame =
           video.readyState === 4 &&
           video.videoWidth > 0 &&
@@ -97,53 +99,58 @@ export default function Scanner() {
           // Nos aseguramos que el video esté listo y que no haya un frame vacío
           const canvas = canvasRef.current;
           if (canvas) {
-            // Ajustamos tamaño interno del canvas al video
+            // Ajustamos tamaño interno del canvas al video (Será 640x480 aprox debido a constraints)
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
             const startTimeMs = performance.now();
 
-            const results: PoseLandmarkerResult =
-              poseLandmarkerRef.current.detectForVideo(video, startTimeMs); // Llamada a la IA
+            try {
+                const results: PoseLandmarkerResult =
+                poseLandmarkerRef.current.detectForVideo(video, startTimeMs); // Llamada a la IA
 
-            const ctx = canvas.getContext("2d");
-            if (ctx) {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-              // Solo dibujamos si hay resultados
-              if (results.landmarks) {
-                const drawingUtils = new DrawingUtils(ctx);
-                for (const landmark of results.landmarks) {
-                  // Dibujar Conexiones
-                  drawingUtils.drawConnectors(landmark, MY_CONNECTIONS, {
-                    color: "#ff5722",
-                    lineWidth: 4,
-                  });
+                // Solo dibujamos si hay resultados
+                if (results.landmarks) {
+                    const drawingUtils = new DrawingUtils(ctx);
+                    for (const landmark of results.landmarks) {
+                    // Dibujar Conexiones
+                    drawingUtils.drawConnectors(landmark, MY_CONNECTIONS, {
+                        color: "#ff5722",
+                        lineWidth: 4,
+                    });
 
-                  // Dibujar Puntos
-                  RELEVANT_LANDMARKS.forEach((index) => {
-                    const point = landmark[index];
-                    if (point) {
-                      ctx.beginPath();
-                      ctx.arc(
-                        point.x * canvas.width,
-                        point.y * canvas.height,
-                        5,
-                        0,
-                        2 * Math.PI,
-                      );
-                      ctx.fillStyle = "#FFFFFF";
-                      ctx.fill();
-                      ctx.lineWidth = 2;
-                      ctx.strokeStyle = "#ff5722";
-                      ctx.stroke();
+                    // Dibujar Puntos
+                    RELEVANT_LANDMARKS.forEach((index) => {
+                        const point = landmark[index];
+                        if (point) {
+                        ctx.beginPath();
+                        ctx.arc(
+                            point.x * canvas.width,
+                            point.y * canvas.height,
+                            5,
+                            0,
+                            2 * Math.PI,
+                        );
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.fill();
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = "#ff5722";
+                        ctx.stroke();
+                        }
+                    });
                     }
-                  });
                 }
-              }
+                }
+            } catch (error) {
+                console.error("Error procesando frame:", error);
             }
           }
         } else {
+          // Limpieza visual si el frame no es válido (ej. cambio de cámara)
           const canvas = canvasRef.current;
           const ctx = canvas?.getContext("2d");
           if (canvas && ctx) {
@@ -179,7 +186,7 @@ export default function Scanner() {
   };
 
   return (
-    <div className="relative w-full h-[85vh] md:h-auto md:max-w-4xl md:aspect-video mx-auto bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
+    <div className="relative w-full h-[80vh] md:h-auto md:max-w-4xl md:aspect-video mx-auto bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
       {/* 1. Loading IA */}
       {!isModelLoaded && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#2a2a2a] text-white">
@@ -213,10 +220,14 @@ export default function Scanner() {
         mirrored={isMirrored} // Espejo dinámico
         onUserMedia={handleUserMedia}
         onUserMediaError={handleUserMediaError}
-        // Configuración de cámara trasera/frontal
+        // --- OPTIMIZACIÓN DE PÍXELES ---
+        // Forzamos resolución VGA (640x480). Buen balance calidad/rendimiento
         videoConstraints={{
           facingMode: facingMode,
+          width: { ideal: 640 },
+          height: { ideal: 480 },
         }}
+        // -------------------------------
         disablePictureInPicture={true}
         controls={false}
         playsInline={true}
