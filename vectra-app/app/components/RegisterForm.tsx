@@ -1,11 +1,14 @@
 "use client";
 
 import { registerUser, UserState } from "@/app/lib/actions";
-import { User, Mail, Lock, ArrowRight } from "lucide-react";
-import { useActionState } from "react";
+import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useActionState, useState } from "react";
 
 export default function RegisterForm() {
   const initialState: UserState = { message: "", errors: {} };
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [state, formAction, isPending] = useActionState(
     registerUser,
@@ -79,10 +82,23 @@ export default function RegisterForm() {
           <input
             id="password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"} 
             placeholder="••••••••"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
+          
+          {/* Botón Toggle Password */}
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+          >
+            {showPassword ? (
+              <EyeOff className="h-5 w-5" />
+            ) : (
+              <Eye className="h-5 w-5" />
+            )}
+          </button>
         </div>
         {state.errors?.password && (
           <p className="text-sm text-red-400 mt-1">{state.errors.password}</p>
@@ -106,10 +122,23 @@ export default function RegisterForm() {
           <input
             id="confirm-password"
             name="confirm-password"
-            type="password"
+            type={showConfirmPassword ? "text" : "password"} 
             placeholder="••••••••"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
+
+          {/* Botón Toggle Confirm Password */}
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+          >
+            {showConfirmPassword ? (
+              <EyeOff className="h-5 w-5" />
+            ) : (
+              <Eye className="h-5 w-5" />
+            )}
+          </button>
         </div>
         {state.errors?.confirmPassword && (
           <p className="text-sm text-red-400 mt-1">

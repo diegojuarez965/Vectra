@@ -1,4 +1,6 @@
 import {Metadata} from "next";
+import Scanner from "@/app/components/users/Scanner";
+
 
 export const metadata: Metadata = {
     title: "Vectra | Usuarios",
@@ -7,8 +9,8 @@ export const metadata: Metadata = {
 };
 export default function UsersPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background">
-            <h1 className="text-4xl font-bold text-primary">Página de Usuarios</h1>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+             <Scanner />
         </div>
     );
 }

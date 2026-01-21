@@ -1,6 +1,7 @@
 "use client";
 
 import DynamicPostureBar from "./DynamicPostureBar";
+import Image from "next/image";
 
 export default function HeroScanner() {
   return (
@@ -19,50 +20,14 @@ export default function HeroScanner() {
             }}
           ></div>
 
-          {/* 2. Esqueleto Biomecánico (SVG) */}
-          <div className="absolute inset-0 flex items-center justify-center p-8">
-            <svg viewBox="0 0 100 200" className="h-full w-full drop-shadow-lg">
-              {/* Estilo de las líneas (Huesos) */}
-              <g
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                className="text-white/40"
-              >
-                {/* Cabeza */}
-                <circle cx="50" cy="20" r="12" fill="none" />
-                {/* Columna */}
-                <line x1="50" y1="32" x2="50" y2="80" />
-                {/* Hombros */}
-                <line x1="30" y1="40" x2="70" y2="40" />
-                {/* Brazos Izquierdo */}
-                <line x1="30" y1="40" x2="25" y2="70" />
-                <line x1="25" y1="70" x2="20" y2="95" />
-                {/* Brazo Derecho */}
-                <line x1="70" y1="40" x2="75" y2="70" />
-                <line x1="75" y1="70" x2="80" y2="95" />
-                {/* Caderas */}
-                <line x1="35" y1="80" x2="65" y2="80" />
-                {/* Pierna Izquierda */}
-                <line x1="35" y1="80" x2="35" y2="120" />
-                <line x1="35" y1="120" x2="35" y2="160" />
-                {/* Pierna Derecha */}
-                <line x1="65" y1="80" x2="65" y2="120" />
-                <line x1="65" y1="120" x2="65" y2="160" />
-              </g>
-
-              {/* Puntos de Articulación (Joints) - Brillan en Naranja */}
-              <g fill="currentColor" className="text-primary animate-pulse">
-                <circle cx="50" cy="20" r="2" /> {/* Nariz/Cabeza */}
-                <circle cx="30" cy="40" r="2" /> {/* Hombro Izq */}
-                <circle cx="70" cy="40" r="2" /> {/* Hombro Der */}
-                <circle cx="25" cy="70" r="2" /> {/* Codo Izq */}
-                <circle cx="75" cy="70" r="2" /> {/* Codo Der */}
-                <circle cx="50" cy="80" r="2" /> {/* Pelvis Central */}
-                <circle cx="35" cy="120" r="2" /> {/* Rodilla Izq */}
-                <circle cx="65" cy="120" r="2" /> {/* Rodilla Der */}
-              </g>
-            </svg>
+          {/* 2. Esqueleto Biomecánico */}
+          <div className="absolute inset-0 pointer-events-none">
+            <Image
+              src="/images/bio-skeleton.png"
+              alt="Esqueleto Biomecánico"
+              fill
+              className="object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+            />
           </div>
 
           {/* 3. Barra Láser de Escaneo (Animación CSS pura) */}

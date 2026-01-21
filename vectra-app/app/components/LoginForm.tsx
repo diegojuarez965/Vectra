@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
+import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { authenticate } from "@/app/lib/actions";
@@ -9,7 +10,8 @@ import { authenticate } from "@/app/lib/actions";
 export default function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/login-success";
-
+  
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, formAction, isPending] = useActionState(
     authenticate,
     undefined
@@ -39,7 +41,7 @@ export default function LoginForm() {
         </div>
       </div>
 
-      {/* --- CAMPO PASSWORD --- */}
+      {/* --- CAMPO PASSWORD */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <label
@@ -50,17 +52,34 @@ export default function LoginForm() {
           </label>
         </div>
         <div className="relative">
+          {/* Icono Candado (Izquierda) */}
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Lock className="h-5 w-5 text-white/40" />
           </div>
+          
+          {/* Input con tipo dinámico */}
           <input
             id="password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"} 
             placeholder="••••••••"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             required
           />
+
+          {/* Botón Toggle (Derecha) */}
+          <button
+            type="button" 
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+          >
+            {showPassword ? (
+              <EyeOff className="h-5 w-5" />
+            ) : (
+              <Eye className="h-5 w-5" />
+            )}
+          </button>
         </div>
       </div>
 

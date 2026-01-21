@@ -8,6 +8,8 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowRight,
+  Eye,       
+  EyeOff,   
 } from "lucide-react";
 
 export default function ResetPasswordForm() {
@@ -18,6 +20,11 @@ export default function ResetPasswordForm() {
   // Estados
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  
+  // Estados para visibilidad
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -102,13 +109,26 @@ export default function ResetPasswordForm() {
             <Lock className="h-5 w-5 text-white/40" />
           </div>
           <input
-            type="password"
+            type={showPassword ? "text" : "password"} 
             placeholder="••••••••"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          
+          {/* Botón Ojo */}
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+          >
+            {showPassword ? (
+              <EyeOff className="h-5 w-5" />
+            ) : (
+              <Eye className="h-5 w-5" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -122,13 +142,26 @@ export default function ResetPasswordForm() {
             <Lock className="h-5 w-5 text-white/40" />
           </div>
           <input
-            type="password"
+            type={showConfirm ? "text" : "password"} 
             placeholder="••••••••"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required
           />
+
+          {/* Botón Ojo Confirmación */}
+          <button
+            type="button"
+            onClick={() => setShowConfirm(!showConfirm)}
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+          >
+            {showConfirm ? (
+              <EyeOff className="h-5 w-5" />
+            ) : (
+              <Eye className="h-5 w-5" />
+            )}
+          </button>
         </div>
       </div>
 
