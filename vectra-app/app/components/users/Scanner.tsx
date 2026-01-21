@@ -59,7 +59,7 @@ export default function Scanner() {
           baseOptions: {
             modelAssetPath:
               "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", // Cargamos el modelo
-            delegate: "GPU",
+            delegate: "CPU",
           },
           runningMode: "VIDEO",
           numPoses: 1,
