@@ -63,6 +63,10 @@ export default function Scanner() {
           },
           runningMode: "VIDEO",
           numPoses: 1,
+          // Confianzas para rendimiento-calidad
+          minPoseDetectionConfidence: 0.5,
+          minPosePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
         });
         poseLandmarkerRef.current = landmarker;
         setIsModelLoaded(true);
