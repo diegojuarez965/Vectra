@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 export default function UsersPage() {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="h-screen flex flex-col items-center justify-center bg-background">
              <Scanner />
         </div>
     );
