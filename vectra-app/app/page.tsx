@@ -100,11 +100,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* --- FOOTER --- */}
-      <footer className="py-8 text-center text-white/40 text-sm border-t border-white/5">
-        <p>© 2026 Vectra Project. Ingeniería en Sistemas de Información.</p>
-      </footer>
     </main>
   );
 }

@@ -4,7 +4,7 @@ import ForgotPasswordForm from "@/app/components/ForgotPasswordForm";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Vectra | Recuperar Contraseña",
+  title: "Recuperar Contraseña",
   description: "Restablece el acceso a tu cuenta de análisis biomecánico.",
 };
 

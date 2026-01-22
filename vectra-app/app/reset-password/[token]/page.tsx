@@ -4,7 +4,7 @@ import ResetPasswordForm from "@/app/components/ResetPasswordForm";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Vectra | Nueva Contraseña",
+  title: "Nueva Contraseña",
   description: "Establece una nueva contraseña segura para tu cuenta.",
 };
 

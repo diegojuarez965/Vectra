@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Vectra | Iniciar Sesión",
+  title: "Iniciar Sesión",
   description:
     "Plataforma de análisis biomecánico y corrección postural con IA.",
 };

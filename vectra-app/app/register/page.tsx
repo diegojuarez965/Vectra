@@ -4,7 +4,7 @@ import RegisterForm from "@/app/components/RegisterForm"; // Asegúrate de la ru
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Vectra | Registro",
+  title: "Registro",
   description: "Crea tu cuenta para comenzar el análisis biomecánico con IA.",
 };
 
