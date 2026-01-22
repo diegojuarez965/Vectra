@@ -8,6 +8,8 @@ import {
   ChevronRight,
   Clock
 } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 import {auth} from "@/auth";
 
 const session = await auth();
