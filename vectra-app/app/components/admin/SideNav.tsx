@@ -1,5 +1,5 @@
 import Link from "next/link";
-import NavLinks from "@/app/components/users/NavLinks";
+import NavLinks from "@/app/components/admin/NavLinks";
 import Image from "next/image";
 import { PowerIcon } from "lucide-react";
 import { signOut } from "@/auth";
