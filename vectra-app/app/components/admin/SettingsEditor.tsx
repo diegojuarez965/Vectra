@@ -11,18 +11,25 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { updateMaintenanceMode } from "@/app/lib/actions";
+import { updateNoRegisterMode } from "@/app/lib/actions";
 
 interface SettingsEditorProps {
   initialMaintenanceMode: boolean;
+  initialNoRegisterMode: boolean;
 }
 
 export default function SettingsEditor({
   initialMaintenanceMode,
+  initialNoRegisterMode,
 }: SettingsEditorProps) {
   const [loading, setLoading] = useState(false);
 
   const [maintenanceActive, setMaintenanceActive] = useState(
     initialMaintenanceMode,
+  );
+
+  const [noRegisterActive, setNoRegisterActive] = useState(
+    initialNoRegisterMode,
   );
 
   return (
@@ -148,12 +155,39 @@ export default function SettingsEditor({
             </SettingCard>
 
             <SettingCard
-              label="Permitir Nuevos Registros"
-              description="Si se desactiva, nadie podrá crear cuentas nuevas."
+              label="Modo Sin Registro"
+              description="Desactiva la capacidad de nuevos usuarios para registrarse en el sistema."
+              dangerZone={true}
             >
-              <div className="pointer-events-none opacity-50">
-                <ToggleSwitchVisual active={true} />
-              </div>
+              <form
+                action={async (formData) => {
+                  const newValue = formData.get("no_register_mode") === "on";
+                  setNoRegisterActive(newValue);
+
+                  await updateNoRegisterMode(formData);
+                }}
+              >
+                <input
+                  type="hidden"
+                  name="no_register_mode"
+                  value={noRegisterActive ? "off" : "on"}
+                />
+
+                <button
+                  type="submit"
+                  className={clsx(
+                    "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-black focus:ring-red-500",
+                    noRegisterActive ? "bg-red-500" : "bg-white/20",
+                  )}
+                >
+                  <div
+                    className={clsx(
+                      "absolute top-1 w-3 h-3 rounded-full bg-white transition-transform duration-300 shadow-md",
+                      noRegisterActive ? "left-6" : "left-1",
+                    )}
+                  />
+                </button>
+              </form>
             </SettingCard>
           </div>
         </section>
@@ -260,24 +294,6 @@ function SettingCard({
           </p>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ToggleSwitchVisual({ active }: { active: boolean }) {
-  return (
-    <div
-      className={clsx(
-        "w-10 h-5 rounded-full relative transition-colors duration-300",
-        active ? "bg-primary" : "bg-white/20",
-      )}
-    >
-      <div
-        className={clsx(
-          "absolute top-1 w-3 h-3 rounded-full bg-white transition-transform duration-300 shadow-md",
-          active ? "left-6" : "left-1",
-        )}
-      />
     </div>
   );
 }

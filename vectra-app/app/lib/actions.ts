@@ -158,3 +158,53 @@ export async function getMaintenanceMode() {
     return false; 
   }
 }
+
+// Actualizar modo no registro
+export async function updateNoRegisterMode(formData: FormData) {
+  const rawValue = formData.get("no_register_mode") as string; 
+  
+  const booleanValue = rawValue === "on";
+
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/no_register_mode`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: booleanValue }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { message: data?.error || "Error al actualizar." };
+    }
+
+    revalidatePath("/register", "layout"); 
+    
+    return { message: "Configuración guardada exitosamente." };
+
+  } catch (error) {
+    console.error("Error en updateNoRegisterMode:", error);
+    return { message: "Error de conexión con la API." };
+  }
+}
+
+// Obtener estado de modo sin registro
+export async function getNoRegisterMode() {
+  noStore(); 
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/no_register_mode`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: 'no-store' 
+    });
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+    
+    return data.value === 'true';
+
+  } catch (error) {
+    console.error("Error obteniendo modo sin registro:", error);
+    return false; 
+  }
+}
