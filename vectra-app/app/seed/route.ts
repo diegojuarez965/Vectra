@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import postgres from "postgres";
-import { users } from "../lib/placeholder-data";
+import { users, system_settings } from "../lib/placeholder-data";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -24,7 +24,7 @@ async function seedUsers() {
         VALUES (${user.name}, ${user.email}, ${hashedPassword}, ${user.rol})
         ON CONFLICT (id) DO NOTHING;
       `;
-    })
+    }),
   );
 
   return insertedUsers;
@@ -41,12 +41,34 @@ async function seedPasswordResetTokens() {
   `;
 }
 
+// Crea tabla de configuraciones del sistema
+async function seedSystemSettings() {
+  await sql`
+CREATE TABLE IF NOT EXISTS system_settings (
+    key VARCHAR(50) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+`;
+  const insertedSettings = await Promise.all(
+    system_settings.map(async (setting) => {
+      return sql`
+        INSERT INTO system_settings (key, value)
+        VALUES (${setting.key}, ${setting.value})
+        ON CONFLICT (key) DO NOTHING;
+      `;
+    }),
+  );
+  return insertedSettings;
+}
+
 // Ruta para sembrar la base de datos
 export async function GET() {
   try {
     await sql.begin(async () => [
       await seedUsers(),
       await seedPasswordResetTokens(),
+      await seedSystemSettings(),
     ]);
 
     return Response.json({ message: "Database seeded successfully" });

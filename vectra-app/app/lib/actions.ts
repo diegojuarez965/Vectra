@@ -1,9 +1,11 @@
-'use server'
+"use server";
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { AuthError } from 'next-auth';
-import { signIn } from '@/auth';
+import { AuthError } from "next-auth";
+import { signIn } from "@/auth";
+import { unstable_noStore as noStore } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -33,7 +35,7 @@ export type UserState = {
 // Registro de usuario
 export async function registerUser(
   prevState: UserState,
-  formData: FormData
+  formData: FormData,
 ): Promise<UserState> {
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirm-password") as string;
@@ -89,20 +91,70 @@ export async function registerUser(
 
 // Autenticación con credenciales
 export async function authenticate(
-    prevState: string | undefined,
-    formData: FormData,
+  prevState: string | undefined,
+  formData: FormData,
 ) {
-    try {
-        await signIn('credentials', formData);
-    } catch (error) {
-        if (error instanceof AuthError) {
-            switch (error.type) {
-                case 'CredentialsSignin':
-                    return 'Credenciales inválidas.';
-                default:
-                    return 'Algo salió mal.';
-            }
-        }
-        throw error;
+  try {
+    await signIn("credentials", formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return "Credenciales inválidas.";
+        default:
+          return "Algo salió mal.";
+      }
     }
+    throw error;
+  }
+}
+ 
+// Actualizar modo mantenimiento
+export async function updateMaintenanceMode(formData: FormData) {
+  const rawValue = formData.get("maintenance_mode") as string; 
+  
+  const booleanValue = rawValue === "on";
+
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/maintenance_mode`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: booleanValue }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { message: data?.error || "Error al actualizar." };
+    }
+
+    revalidatePath("/", "layout"); 
+    
+    return { message: "Configuración guardada exitosamente." };
+
+  } catch (error) {
+    console.error("Error en updateMaintenanceMode:", error);
+    return { message: "Error de conexión con la API." };
+  }
+}
+
+// Obtener estado de modo mantenimiento
+export async function getMaintenanceMode() {
+  noStore(); 
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/maintenance_mode`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: 'no-store' 
+    });
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+    
+    return data.value === 'true';
+
+  } catch (error) {
+    console.error("Error obteniendo modo mantenimiento:", error);
+    return false; 
+  }
 }

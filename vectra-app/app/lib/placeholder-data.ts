@@ -7,4 +7,11 @@ const users = [
   },
 ];
 
-export { users };
+const system_settings = [
+  {
+    key: "maintenance_mode",
+    value: "false",
+  },
+];
+
+export { users, system_settings };

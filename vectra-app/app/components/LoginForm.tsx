@@ -7,14 +7,18 @@ import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { authenticate } from "@/app/lib/actions";
 
-export default function LoginForm() {
+interface LoginFormProps {
+  isMaintenance?: boolean;
+}
+
+export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/login-success";
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, formAction, isPending] = useActionState(
     authenticate,
-    undefined
+    undefined,
   );
 
   return (
@@ -56,12 +60,12 @@ export default function LoginForm() {
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Lock className="h-5 w-5 text-white/40" />
           </div>
-          
+
           {/* Input con tipo dinámico */}
           <input
             id="password"
             name="password"
-            type={showPassword ? "text" : "password"} 
+            type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             required
@@ -69,10 +73,12 @@ export default function LoginForm() {
 
           {/* Botón Toggle (Derecha) */}
           <button
-            type="button" 
+            type="button"
             onClick={() => setShowPassword(!showPassword)}
             className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
-            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            aria-label={
+              showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+            }
           >
             {showPassword ? (
               <EyeOff className="h-5 w-5" />
@@ -84,14 +90,16 @@ export default function LoginForm() {
       </div>
 
       {/* --- OLVIDASTE CONTRASEÑA --- */}
-      <div className="flex justify-end">
-        <Link
-          href="/reset-password"
-          className="text-sm font-medium text-white/60 hover:text-primary transition-colors"
-        >
-          ¿Olvidaste tu contraseña?
-        </Link>
-      </div>
+      {!isMaintenance && (
+        <div className="flex justify-end">
+          <Link
+            href="/reset-password"
+            className="text-sm font-medium text-white/60 hover:text-primary transition-colors"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
+      )}
 
       {/* --- BOTÓN SUBMIT --- */}
       <input type="hidden" name="redirectTo" value={callbackUrl} />
