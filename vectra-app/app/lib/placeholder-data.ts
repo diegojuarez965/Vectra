@@ -19,7 +19,11 @@ const system_settings = [
   {
     key: "confidence_threshold",
     value: "0.5",
-  }
+  },
+  {
+    key: "smoothing_factor",
+    value: "0.5",
+  },
 ];
 
 export { users, system_settings };

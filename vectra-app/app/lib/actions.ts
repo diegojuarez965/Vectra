@@ -108,11 +108,11 @@ export async function authenticate(
     throw error;
   }
 }
- 
+
 // Actualizar modo mantenimiento
 export async function updateMaintenanceMode(formData: FormData) {
-  const rawValue = formData.get("maintenance_mode") as string; 
-  
+  const rawValue = formData.get("maintenance_mode") as string;
+
   const booleanValue = rawValue === "on";
 
   try {
@@ -127,10 +127,9 @@ export async function updateMaintenanceMode(formData: FormData) {
       return { message: data?.error || "Error al actualizar." };
     }
 
-    revalidatePath("/", "layout"); 
-    
-    return { message: "Configuración guardada exitosamente." };
+    revalidatePath("/", "layout");
 
+    return { message: "Configuración guardada exitosamente." };
   } catch (error) {
     console.error("Error en updateMaintenanceMode:", error);
     return { message: "Error de conexión con la API." };
@@ -139,30 +138,29 @@ export async function updateMaintenanceMode(formData: FormData) {
 
 // Obtener estado de modo mantenimiento
 export async function getMaintenanceMode() {
-  noStore(); 
+  noStore();
   try {
     const res = await fetch(`${baseUrl}/api/system-settings/maintenance_mode`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
-      cache: 'no-store' 
+      cache: "no-store",
     });
 
     if (!res.ok) return false;
 
     const data = await res.json();
-    
-    return data.value === 'true';
 
+    return data.value === "true";
   } catch (error) {
     console.error("Error obteniendo modo mantenimiento:", error);
-    return false; 
+    return false;
   }
 }
 
 // Actualizar modo no registro
 export async function updateNoRegisterMode(formData: FormData) {
-  const rawValue = formData.get("no_register_mode") as string; 
-  
+  const rawValue = formData.get("no_register_mode") as string;
+
   const booleanValue = rawValue === "on";
 
   try {
@@ -177,10 +175,9 @@ export async function updateNoRegisterMode(formData: FormData) {
       return { message: data?.error || "Error al actualizar." };
     }
 
-    revalidatePath("/register", "layout"); 
-    
-    return { message: "Configuración guardada exitosamente." };
+    revalidatePath("/register", "layout");
 
+    return { message: "Configuración guardada exitosamente." };
   } catch (error) {
     console.error("Error en updateNoRegisterMode:", error);
     return { message: "Error de conexión con la API." };
@@ -189,32 +186,83 @@ export async function updateNoRegisterMode(formData: FormData) {
 
 // Obtener estado de modo sin registro
 export async function getNoRegisterMode() {
-  noStore(); 
+  noStore();
   try {
     const res = await fetch(`${baseUrl}/api/system-settings/no_register_mode`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
-      cache: 'no-store' 
+      cache: "no-store",
     });
 
     if (!res.ok) return false;
 
     const data = await res.json();
-    
-    return data.value === 'true';
 
+    return data.value === "true";
   } catch (error) {
     console.error("Error obteniendo modo sin registro:", error);
-    return false; 
+    return false;
   }
 }
 
 // Actualizar umbral de confianza
 export async function updateConfidenceThreshold(formData: FormData) {
-  const rawValue = formData.get("confidence_threshold") as string; 
+  const rawValue = formData.get("confidence_threshold") as string;
   const numericValue = parseFloat(rawValue);
   try {
-    const res = await fetch(`${baseUrl}/api/system-settings/confidence-threshold`, {
+    const res = await fetch(
+      `${baseUrl}/api/system-settings/confidence_threshold`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: numericValue }),
+      },
+    );
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { message: data?.error || "Error al actualizar." };
+    }
+
+    revalidatePath("/", "layout");
+
+    return { message: "Umbral de confianza guardado exitosamente." };
+  } catch (error) {
+    console.error("Error en updateConfidenceThreshold:", error);
+    return { message: "Error de conexión con la API." };
+  }
+}
+
+// Obtener umbral de confianza
+export async function getConfidenceThreshold() {
+  noStore();
+  try {
+    const res = await fetch(
+      `${baseUrl}/api/system-settings/confidence_threshold`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      },
+    );
+
+    if (!res.ok) return 0.5;
+
+    const data = await res.json();
+
+    return parseFloat(data.value);
+  } catch (error) {
+    console.error("Error obteniendo umbral de confianza:", error);
+    return 0.5;
+  }
+}
+
+// Actualizar factor de suavizado
+export async function updateSmoothingFactor(formData: FormData) {
+  const value = formData.get("smoothing_factor") as string;
+  const numericValue = parseFloat(value);
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/smoothing_factor`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value: numericValue }),
@@ -225,34 +273,31 @@ export async function updateConfidenceThreshold(formData: FormData) {
       return { message: data?.error || "Error al actualizar." };
     }
 
-    revalidatePath("/", "layout"); 
-    
-    return { message: "Umbral de confianza guardado exitosamente." };
+    revalidatePath("/", "layout");
 
+    return { message: "Factor de suavizado guardado exitosamente." };
   } catch (error) {
-    console.error("Error en updateConfidenceThreshold:", error);
+    console.error("Error en updateSmoothingFactor:", error);
     return { message: "Error de conexión con la API." };
   }
 }
 
-// Obtener umbral de confianza
-export async function getConfidenceThreshold() {
-  noStore(); 
+// Obtener factor de suavizado
+export async function getSmoothingFactor() {
+  noStore();
   try {
-    const res = await fetch(`${baseUrl}/api/system-settings/confidence-threshold`, {
+    const res = await fetch(`${baseUrl}/api/system-settings/smoothing_factor`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
-      cache: 'no-store' 
+      cache: "no-store",
     });
 
     if (!res.ok) return 0.5;
-
     const data = await res.json();
-    
-    return parseFloat(data.value);
 
+    return parseFloat(data.value);
   } catch (error) {
-    console.error("Error obteniendo umbral de confianza:", error);
-    return 0.5; 
+    console.error("Error obteniendo factor de suavizado:", error);
+    return 0.5;
   }
 }

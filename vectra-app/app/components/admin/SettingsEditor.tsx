@@ -14,19 +14,21 @@ import {
   updateMaintenanceMode,
   updateNoRegisterMode,
   updateConfidenceThreshold,
+  updateSmoothingFactor,
 } from "@/app/lib/actions";
-
 
 interface SettingsEditorProps {
   initialMaintenanceMode: boolean;
   initialNoRegisterMode: boolean;
   initialConfidenceThreshold: number;
+  initialSmoothingFactor?: number;
 }
 
 export default function SettingsEditor({
   initialMaintenanceMode,
   initialNoRegisterMode,
   initialConfidenceThreshold,
+  initialSmoothingFactor,
 }: SettingsEditorProps) {
   const [loading, setLoading] = useState(false);
 
@@ -42,6 +44,9 @@ export default function SettingsEditor({
     initialConfidenceThreshold,
   );
 
+  const [smoothingFactor, setSmoothingFactor] = useState(
+    initialSmoothingFactor,
+  );
   return (
     <div className="h-full w-full overflow-y-auto bg-black p-4 md:p-8 text-white pb-24">
       {/* HEADER */}
@@ -79,52 +84,99 @@ export default function SettingsEditor({
           </div>
 
           <div className="space-y-4">
-            <SettingCard 
+            <SettingCard
               label="Umbral de Confianza (Confidence)"
               valueDisplay={confidenceThreshold.toFixed(2)} // Muestra siempre 2 decimales (ej: 0.60)
               description="Define qué tan seguro debe estar el modelo para marcar un punto corporal. Un valor alto (0.8+) es más preciso pero requiere mejor luz."
             >
-              <form action={async (formData) => {
+              <form
+                action={async (formData) => {
                   await updateConfidenceThreshold(formData);
-                }}>
-                <input 
-                  type="range" 
+                }}
+              >
+                <input
+                  type="range"
                   name="confidence_threshold"
-                  min="0" 
-                  max="1" 
-                  step="0.05" 
+                  min="0"
+                  max="1"
+                  step="0.05"
                   defaultValue={initialConfidenceThreshold}
-                  
-                  onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
-                  
+                  onChange={(e) =>
+                    setConfidenceThreshold(parseFloat(e.target.value))
+                  }
                   onMouseUp={(e) => e.currentTarget.form?.requestSubmit()}
                   onTouchEnd={(e) => e.currentTarget.form?.requestSubmit()}
-                  
-                  className="w-full accent-primary h-2 bg-white/10 rounded-lg appearance-none cursor-pointer" 
+                  className="w-full accent-primary h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
                 />
               </form>
             </SettingCard>
 
             <SettingCard
               label="Suavizado (Jitter Filter)"
-              valueDisplay="Media"
-              description="Aplica un filtro para reducir el temblor de los puntos detectados."
+              // Lógica para mostrar el texto correcto según el valor numérico actual
+              valueDisplay={
+                smoothingFactor === 0.8
+                  ? "Bajo"
+                  : smoothingFactor === 0.2
+                    ? "Alto"
+                    : "Media"
+              }
+              description="Aplica un filtro para reducir el temblor de los puntos detectados. 'Alto' es más suave pero puede tener un ligero retraso."
             >
-              <div className="flex gap-2">
-                {["Bajo", "Media", "Alto"].map((level) => (
-                  <button
-                    key={level}
-                    className={clsx(
-                      "px-3 py-1 text-xs rounded-md border transition-colors",
-                      level === "Media"
-                        ? "bg-primary/20 border-primary text-primary"
-                        : "border-white/10 bg-white/5 text-white/40 hover:bg-white/10",
-                    )}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
+              <form
+                action={async (formData) => {
+                  await updateSmoothingFactor(formData);
+                }}
+                className="flex gap-2"
+              >
+                {/* OPCIÓN: BAJO (0.8) */}
+                <button
+                  type="submit"
+                  name="smoothing_factor"
+                  value="0.8"
+                  onClick={() => setSmoothingFactor(0.8)}
+                  className={clsx(
+                    "cursor-pointer flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all duration-200",
+                    smoothingFactor === 0.8
+                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
+                      : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white",
+                  )}
+                >
+                  Bajo
+                </button>
+
+                {/* OPCIÓN: MEDIA (0.5) */}
+                <button
+                  type="submit"
+                  name="smoothing_factor"
+                  value="0.5"
+                  onClick={() => setSmoothingFactor(0.5)}
+                  className={clsx(
+                    "cursor-pointer flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all duration-200",
+                    smoothingFactor === 0.5
+                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
+                      : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white",
+                  )}
+                >
+                  Media
+                </button>
+
+                {/* OPCIÓN: ALTO (0.2) */}
+                <button
+                  type="submit"
+                  name="smoothing_factor"
+                  value="0.2"
+                  onClick={() => setSmoothingFactor(0.2)}
+                  className={clsx(
+                    "cursor-pointer flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all duration-200",
+                    smoothingFactor === 0.2
+                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
+                      : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white",
+                  )}
+                >
+                  Alto
+                </button>
+              </form>
             </SettingCard>
           </div>
         </section>

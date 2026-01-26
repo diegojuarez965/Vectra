@@ -6,6 +6,7 @@ import {
   FilesetResolver, // Componente necesaria para cargar modelos
   PoseLandmarker, // Modelo de Detección de Humanos
   PoseLandmarkerResult, // Tipo de resultado del modelo
+  NormalizedLandmark, // Tipo de punto normalizado
   DrawingUtils, // Utilidades para dibujar en canvas
 } from "@mediapipe/tasks-vision";
 import { Loader2, CameraOff, RefreshCw, SwitchCamera } from "lucide-react";
@@ -29,15 +30,25 @@ const MY_CONNECTIONS = [
 // (Hombros, Codos, Muñecas, Caderas, Rodillas, Tobillos)
 const RELEVANT_LANDMARKS = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 
+// Función de interpolación lineal para suavizado
+const lerp = (start: number, end: number, factor: number) => {
+  return start + (end - start) * factor;
+};
+
 interface ScannerProps {
   confidence_threshold: number;
+  smoothingFactor: number;
 }
 
-export default function Scanner({ confidence_threshold }: ScannerProps) {
+export default function Scanner({
+  confidence_threshold,
+  smoothingFactor,
+}: ScannerProps) {
   const webcamRef = useRef<Webcam>(null); // Referencia a componente Webcam
   const canvasRef = useRef<HTMLCanvasElement>(null); // Referencia a Canvas para dibujo
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null); // Referencia al modelo
   const requestRef = useRef<number>(0); // Referencia para requestAnimationFrame
+  const prevLandmarksRef = useRef<NormalizedLandmark[] | null>(null); // Referencia para suavizado de puntos
 
   // ESTADOS
   const [isModelLoaded, setIsModelLoaded] = useState(false);
@@ -83,7 +94,7 @@ export default function Scanner({ confidence_threshold }: ScannerProps) {
     return () => {
       poseLandmarkerRef.current?.close();
     };
-  }, []);
+  }, [confidence_threshold]);
 
   // 2. Loop de Detección
   useEffect(() => {
@@ -117,25 +128,51 @@ export default function Scanner({ confidence_threshold }: ScannerProps) {
             // Try/Catch interno para evitar que un frame corrupto rompa el loop
             try {
               const results: PoseLandmarkerResult =
-                poseLandmarkerRef.current.detectForVideo(video, startTimeMs); // Llamada a la IA
+                poseLandmarkerRef.current.detectForVideo(video, startTimeMs);
 
-              const ctx = canvas.getContext("2d");
-              if (ctx) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+              let finalLandmarks = null;
 
-                // Solo dibujamos si hay resultados
-                if (results.landmarks) {
+              if (results.landmarks && results.landmarks.length > 0) {
+                const rawLandmarks = results.landmarks[0]; // Tomamos solo el primer humano detectado
+
+                // Si tenemos historia previa, aplicamos suavizado
+                if (prevLandmarksRef.current) {
+                  finalLandmarks = rawLandmarks.map((point, index) => {
+                    const prevPoint = prevLandmarksRef.current![index];
+                    return {
+                      x: lerp(prevPoint.x, point.x, smoothingFactor),
+                      y: lerp(prevPoint.y, point.y, smoothingFactor),
+                      z: lerp(prevPoint.z, point.z, smoothingFactor),
+                      visibility: point.visibility,
+                    };
+                  });
+                } else {
+                  // Si es el primer frame, no hay suavizado posible
+                  finalLandmarks = rawLandmarks;
+                }
+
+                // Guardamos los puntos suavizados para el siguiente frame
+                prevLandmarksRef.current = finalLandmarks;
+
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
                   const drawingUtils = new DrawingUtils(ctx);
-                  for (const landmark of results.landmarks) {
+
+                  if (finalLandmarks) {
                     // Dibujar Conexiones
-                    drawingUtils.drawConnectors(landmark, MY_CONNECTIONS, {
-                      color: "#ff5722",
-                      lineWidth: 4,
-                    });
+                    drawingUtils.drawConnectors(
+                      finalLandmarks,
+                      MY_CONNECTIONS,
+                      {
+                        color: "#ff5722",
+                        lineWidth: 4,
+                      },
+                    );
 
                     // Dibujar Puntos
                     RELEVANT_LANDMARKS.forEach((index) => {
-                      const point = landmark[index];
+                      const point = finalLandmarks![index];
                       if (point) {
                         ctx.beginPath();
                         ctx.arc(
@@ -154,13 +191,16 @@ export default function Scanner({ confidence_threshold }: ScannerProps) {
                     });
                   }
                 }
+              } else {
+                // Si no detecta nada, reseteamos la historia para que no salte
+                prevLandmarksRef.current = null;
               }
             } catch (error) {
               console.error("Error procesando frame:", error);
             }
           }
         } else {
-          // Limpieza visual si el frame no es válido (ej. cambio de cámara)
+          // Limpieza visual si el frame no es válido
           const canvas = canvasRef.current;
           const ctx = canvas?.getContext("2d");
           if (canvas && ctx) {
@@ -175,7 +215,7 @@ export default function Scanner({ confidence_threshold }: ScannerProps) {
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current); // En caso de desmontar, cancelamos la animación
     };
-  }, [isModelLoaded, webcamRunning, facingMode]);
+  }, [smoothingFactor, isModelLoaded, webcamRunning, facingMode]);
 
   // HANDLERS
   const handleUserMedia = () => {
