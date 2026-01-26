@@ -10,17 +10,23 @@ import {
   Info,
 } from "lucide-react";
 import clsx from "clsx";
-import { updateMaintenanceMode } from "@/app/lib/actions";
-import { updateNoRegisterMode } from "@/app/lib/actions";
+import {
+  updateMaintenanceMode,
+  updateNoRegisterMode,
+  updateConfidenceThreshold,
+} from "@/app/lib/actions";
+
 
 interface SettingsEditorProps {
   initialMaintenanceMode: boolean;
   initialNoRegisterMode: boolean;
+  initialConfidenceThreshold: number;
 }
 
 export default function SettingsEditor({
   initialMaintenanceMode,
   initialNoRegisterMode,
+  initialConfidenceThreshold,
 }: SettingsEditorProps) {
   const [loading, setLoading] = useState(false);
 
@@ -30,6 +36,10 @@ export default function SettingsEditor({
 
   const [noRegisterActive, setNoRegisterActive] = useState(
     initialNoRegisterMode,
+  );
+
+  const [confidenceThreshold, setConfidenceThreshold] = useState(
+    initialConfidenceThreshold,
   );
 
   return (
@@ -69,19 +79,30 @@ export default function SettingsEditor({
           </div>
 
           <div className="space-y-4">
-            <SettingCard
+            <SettingCard 
               label="Umbral de Confianza (Confidence)"
-              valueDisplay="0.65"
-              description="Define qué tan seguro debe estar el modelo para marcar un punto corporal."
+              valueDisplay={confidenceThreshold.toFixed(2)} // Muestra siempre 2 decimales (ej: 0.60)
+              description="Define qué tan seguro debe estar el modelo para marcar un punto corporal. Un valor alto (0.8+) es más preciso pero requiere mejor luz."
             >
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                defaultValue="0.65"
-                className="w-full accent-primary h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
-              />
+              <form action={async (formData) => {
+                  await updateConfidenceThreshold(formData);
+                }}>
+                <input 
+                  type="range" 
+                  name="confidence_threshold"
+                  min="0" 
+                  max="1" 
+                  step="0.05" 
+                  defaultValue={initialConfidenceThreshold}
+                  
+                  onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
+                  
+                  onMouseUp={(e) => e.currentTarget.form?.requestSubmit()}
+                  onTouchEnd={(e) => e.currentTarget.form?.requestSubmit()}
+                  
+                  className="w-full accent-primary h-2 bg-white/10 rounded-lg appearance-none cursor-pointer" 
+                />
+              </form>
             </SettingCard>
 
             <SettingCard

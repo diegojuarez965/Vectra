@@ -208,3 +208,51 @@ export async function getNoRegisterMode() {
     return false; 
   }
 }
+
+// Actualizar umbral de confianza
+export async function updateConfidenceThreshold(formData: FormData) {
+  const rawValue = formData.get("confidence_threshold") as string; 
+  const numericValue = parseFloat(rawValue);
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/confidence-threshold`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: numericValue }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { message: data?.error || "Error al actualizar." };
+    }
+
+    revalidatePath("/", "layout"); 
+    
+    return { message: "Umbral de confianza guardado exitosamente." };
+
+  } catch (error) {
+    console.error("Error en updateConfidenceThreshold:", error);
+    return { message: "Error de conexión con la API." };
+  }
+}
+
+// Obtener umbral de confianza
+export async function getConfidenceThreshold() {
+  noStore(); 
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/confidence-threshold`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: 'no-store' 
+    });
+
+    if (!res.ok) return 0.5;
+
+    const data = await res.json();
+    
+    return parseFloat(data.value);
+
+  } catch (error) {
+    console.error("Error obteniendo umbral de confianza:", error);
+    return 0.5; 
+  }
+}

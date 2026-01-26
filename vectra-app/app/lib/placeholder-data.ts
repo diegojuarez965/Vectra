@@ -15,6 +15,10 @@ const system_settings = [
   {
     key: "no_register_mode",
     value: "false",
+  },
+  {
+    key: "confidence_threshold",
+    value: "0.5",
   }
 ];
 

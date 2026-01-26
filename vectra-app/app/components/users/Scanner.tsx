@@ -29,7 +29,11 @@ const MY_CONNECTIONS = [
 // (Hombros, Codos, Muñecas, Caderas, Rodillas, Tobillos)
 const RELEVANT_LANDMARKS = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 
-export default function Scanner() {
+interface ScannerProps {
+  confidence_threshold: number;
+}
+
+export default function Scanner({ confidence_threshold }: ScannerProps) {
   const webcamRef = useRef<Webcam>(null); // Referencia a componente Webcam
   const canvasRef = useRef<HTMLCanvasElement>(null); // Referencia a Canvas para dibujo
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null); // Referencia al modelo
@@ -61,9 +65,14 @@ export default function Scanner() {
               "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", // Cargamos el modelo
             delegate: "GPU",
           },
+          minPoseDetectionConfidence: confidence_threshold,
+          minPosePresenceConfidence: confidence_threshold,
+          minTrackingConfidence: confidence_threshold,
           runningMode: "VIDEO",
           numPoses: 1,
         });
+        console.log("Confidence Threshold:", confidence_threshold);
+
         poseLandmarkerRef.current = landmarker;
         setIsModelLoaded(true);
       } catch (error) {
@@ -99,7 +108,7 @@ export default function Scanner() {
           // Nos aseguramos que el video esté listo y que no haya un frame vacío
           const canvas = canvasRef.current;
           if (canvas) {
-            // Ajustamos tamaño interno del canvas al video 
+            // Ajustamos tamaño interno del canvas al video
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
@@ -107,47 +116,47 @@ export default function Scanner() {
 
             // Try/Catch interno para evitar que un frame corrupto rompa el loop
             try {
-                const results: PoseLandmarkerResult =
+              const results: PoseLandmarkerResult =
                 poseLandmarkerRef.current.detectForVideo(video, startTimeMs); // Llamada a la IA
 
-                const ctx = canvas.getContext("2d");
-                if (ctx) {
+              const ctx = canvas.getContext("2d");
+              if (ctx) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 // Solo dibujamos si hay resultados
                 if (results.landmarks) {
-                    const drawingUtils = new DrawingUtils(ctx);
-                    for (const landmark of results.landmarks) {
+                  const drawingUtils = new DrawingUtils(ctx);
+                  for (const landmark of results.landmarks) {
                     // Dibujar Conexiones
                     drawingUtils.drawConnectors(landmark, MY_CONNECTIONS, {
-                        color: "#ff5722",
-                        lineWidth: 4,
+                      color: "#ff5722",
+                      lineWidth: 4,
                     });
 
                     // Dibujar Puntos
                     RELEVANT_LANDMARKS.forEach((index) => {
-                        const point = landmark[index];
-                        if (point) {
+                      const point = landmark[index];
+                      if (point) {
                         ctx.beginPath();
                         ctx.arc(
-                            point.x * canvas.width,
-                            point.y * canvas.height,
-                            5,
-                            0,
-                            2 * Math.PI,
+                          point.x * canvas.width,
+                          point.y * canvas.height,
+                          5,
+                          0,
+                          2 * Math.PI,
                         );
                         ctx.fillStyle = "#FFFFFF";
                         ctx.fill();
                         ctx.lineWidth = 2;
                         ctx.strokeStyle = "#ff5722";
                         ctx.stroke();
-                        }
+                      }
                     });
-                    }
+                  }
                 }
-                }
+              }
             } catch (error) {
-                console.error("Error procesando frame:", error);
+              console.error("Error procesando frame:", error);
             }
           }
         } else {
@@ -222,7 +231,7 @@ export default function Scanner() {
         onUserMedia={handleUserMedia}
         onUserMediaError={handleUserMediaError}
         // --- OPTIMIZACIÓN DE PÍXELES ---
-        // Forzamos resolución VGA (640x480). 
+        // Forzamos resolución VGA (640x480).
         videoConstraints={{
           facingMode: facingMode,
           width: { ideal: 640 },
