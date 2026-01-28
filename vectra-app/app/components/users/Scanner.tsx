@@ -3,13 +3,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import {
-  FilesetResolver, // Componente necesaria para cargar modelos
-  PoseLandmarker, // Modelo de Detección de Humanos
-  PoseLandmarkerResult, // Tipo de resultado del modelo
+  FilesetResolver, // Para cargar los archivos WASM
+  PoseLandmarker, // El modelo de Pose Landmarker
+  PoseLandmarkerResult, // Tipo de resultado
   NormalizedLandmark, // Tipo de punto normalizado
-  DrawingUtils, // Utilidades para dibujar en canvas
+  DrawingUtils, // Utilidades de dibujo
 } from "@mediapipe/tasks-vision";
-import { Loader2, CameraOff, RefreshCw, SwitchCamera } from "lucide-react";
+import {
+  Loader2,
+  CameraOff,
+  RefreshCw,
+  SwitchCamera,
+  Play,
+  Upload,
+  Maximize,
+  Minimize,
+} from "lucide-react";
 
 // Conexiones del esqueleto relevantes
 const MY_CONNECTIONS = [
@@ -36,44 +45,63 @@ const lerp = (start: number, end: number, factor: number) => {
 };
 
 interface ScannerProps {
+  mode: "live" | "file";
+  videoSrc?: string | null;
   confidence_threshold: number;
   smoothingFactor: number;
 }
 
 export default function Scanner({
+  mode,
+  videoSrc = null,
   confidence_threshold,
   smoothingFactor,
 }: ScannerProps) {
-  const webcamRef = useRef<Webcam>(null); // Referencia a componente Webcam
-  const canvasRef = useRef<HTMLCanvasElement>(null); // Referencia a Canvas para dibujo
-  const poseLandmarkerRef = useRef<PoseLandmarker | null>(null); // Referencia al modelo
+  // REFS
+  const containerRef = useRef<HTMLDivElement>(null); // Contenedor principal
+  const webcamRef = useRef<Webcam>(null); // Webcam para modo "live"
+  const fileVideoRef = useRef<HTMLVideoElement>(null); // Video para modo "file"
+  const canvasRef = useRef<HTMLCanvasElement>(null); // Canvas para dibujo
+  const poseLandmarkerRef = useRef<PoseLandmarker | null>(null); // Modelo de IA
   const requestRef = useRef<number>(0); // Referencia para requestAnimationFrame
-  const prevLandmarksRef = useRef<NormalizedLandmark[] | null>(null); // Referencia para suavizado de puntos
+  const prevLandmarksRef = useRef<NormalizedLandmark[] | null>(null); // Últimos puntos detectados
+
+  // Referencias para la lógica de "Reloj Monotónico"
+  const lastVideoTimeRef = useRef<number>(-1); // Último tiempo real de video procesado
+  const timestampOffsetRef = useRef<number>(0); // Tiempo que le sumamos al real para enviar al modelo en modo "file"
+  const highestTimestampSentRef = useRef<number>(0); // Mayor tiempo enviado a la IA en modo "file"
 
   // ESTADOS
-  const [isModelLoaded, setIsModelLoaded] = useState(false);
-  const [webcamRunning, setWebcamRunning] = useState(false);
+  const [isModelLoaded, setIsModelLoaded] = useState(false); // Modelo cargado
+  const [webcamRunning, setWebcamRunning] = useState(false); // Estado de la webcam
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(
     null,
-  );
+  ); // Permiso de cámara
+  const [isFilePlaying, setIsFilePlaying] = useState(false); // Estado del video
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user"); // Cámara frontal/trasera
+  const [isFullscreen, setIsFullscreen] = useState(false); // Fullscreen
 
-  // Estado para controlar qué cámara se usa ("user" = frontal, "environment" = trasera)
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
-
-  // Calculamos si debemos espejar la imagen (Solo espejar si es frontal)
-  const isMirrored = facingMode === "user";
+  const isMirrored = mode === "live" && facingMode === "user"; // Espejado solo en modo "live" y cámara frontal
 
   // 1. Cargar el modelo de IA
   useEffect(() => {
     const createPoseLandmarker = async () => {
+      // Limpiar el modelo anterior
+      if (poseLandmarkerRef.current) {
+        poseLandmarkerRef.current.close();
+      }
+      setIsModelLoaded(false);
+
       try {
+        // Descargar los archivos WASM necesarios
         const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm", // Cargamos el motor del modelo
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm",
         );
+        // Cargar el modelo de Pose Landmarker
         const landmarker = await PoseLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", // Cargamos el modelo
+              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
             delegate: "GPU",
           },
           minPoseDetectionConfidence: confidence_threshold,
@@ -82,8 +110,7 @@ export default function Scanner({
           runningMode: "VIDEO",
           numPoses: 1,
         });
-        console.log("Confidence Threshold:", confidence_threshold);
-
+        console.log("Modelo Cargado. Umbral:", confidence_threshold);
         poseLandmarkerRef.current = landmarker;
         setIsModelLoaded(true);
       } catch (error) {
@@ -96,148 +123,203 @@ export default function Scanner({
     };
   }, [confidence_threshold]);
 
+  // Resetear al cambiar video
+  useEffect(() => {
+    prevLandmarksRef.current = null;
+    lastVideoTimeRef.current = -1;
+    // IMPORTANTE: No reseteamos highestTimestamp ni offset aquí para mantener la continuidad y evitar crashes.
+  }, [videoSrc]);
+
+  // Listener Fullscreen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  // Toggle Fullscreen
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      try {
+        await containerRef.current.requestFullscreen();
+      } catch (err) {
+        console.error("Error fullscreen:", err);
+      }
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   // 2. Loop de Detección
   useEffect(() => {
-    if (!isModelLoaded || !webcamRunning) return;
+    // Controles de condición iniciales
+    if (!isModelLoaded) return;
+    if (mode === "live" && !webcamRunning) return;
+    if (mode === "file" && !videoSrc) return;
 
-    const predictWebcam = () => {
-      if (
-        poseLandmarkerRef.current &&
-        webcamRef.current &&
-        webcamRef.current.video
-      ) {
-        const video = webcamRef.current.video;
+    const predict = () => {
+      let video: HTMLVideoElement | null = null; // Fuente de video
+      let realVideoTime = 0; // Tiempo real del video
+      let timestampForAI = 0; // Timestamp a enviar al modelo
 
-        // OPTIMIZACIÓN DE FRAME:
-        // Verificamos dimensiones > 0 para evitar errores al cambiar de cámara
-        const isValidFrame =
-          video.readyState === 4 &&
-          video.videoWidth > 0 &&
-          video.videoHeight > 0;
+      // Obtener el video y tiempo según el modo
+      if (mode === "live" && webcamRef.current?.video) {
+        video = webcamRef.current.video; // Fuente de video en modo "live"
+        realVideoTime = performance.now(); // Tiempo real basado en performance.now() para el modo "live"
+        timestampForAI = realVideoTime; // Enviar tiempo real directamente al modelo en modo "live"
+      } else if (mode === "file" && fileVideoRef.current) {
+        video = fileVideoRef.current; // Fuente de video en modo "file"
+        realVideoTime = video.currentTime * 1000; // Convertir a milisegundos para el modo "file"
 
-        if (isValidFrame) {
-          // Nos aseguramos que el video esté listo y que no haya un frame vacío
-          const canvas = canvasRef.current;
-          if (canvas) {
-            // Ajustamos tamaño interno del canvas al video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+        // 1. Si el tiempo no ha cambiado (Pausa), no procesamos.
+        if (realVideoTime === lastVideoTimeRef.current) {
+          requestRef.current = requestAnimationFrame(predict);
+          return;
+        }
 
-            const startTimeMs = performance.now();
+        // 2. Cálculo preliminar del tiempo a enviar al modelo en modo "file" considerando el offset acumulado:
+        let candidateTime = realVideoTime + timestampOffsetRef.current;
 
-            // Try/Catch interno para evitar que un frame corrupto rompa el loop
-            try {
-              const results: PoseLandmarkerResult =
-                poseLandmarkerRef.current.detectForVideo(video, startTimeMs);
+        // 3. Si el nuevo tiempo es muy cercano al último enviado, forzamos el avance.
+        const MIN_GAP = 1.5;
+        if (candidateTime < highestTimestampSentRef.current + MIN_GAP) {
+          const gap = highestTimestampSentRef.current - candidateTime + 33; // Calculamos cuánto nos falta para alcanzar al último tiempo enviado y le sumamos ~1 frame
+          timestampOffsetRef.current += gap; // Guardamos esta corrección en el acumulador global para que los siguientes frames también mantengan esta coherencia temporal.
+          candidateTime = realVideoTime + timestampOffsetRef.current; // Actualizamos el tiempo a enviar
+        }
 
-              let finalLandmarks = null;
+        timestampForAI = candidateTime;
+        highestTimestampSentRef.current = timestampForAI;
+        lastVideoTimeRef.current = realVideoTime;
+      }
 
-              if (results.landmarks && results.landmarks.length > 0) {
-                const rawLandmarks = results.landmarks[0]; // Tomamos solo el primer humano detectado
+      // Verificar si el frame de video es válido
+      const isValidFrame =
+        video && video.readyState >= 2 && video.videoHeight > 0;
 
-                // Si tenemos historia previa, aplicamos suavizado
-                if (prevLandmarksRef.current) {
-                  finalLandmarks = rawLandmarks.map((point, index) => {
-                    const prevPoint = prevLandmarksRef.current![index];
-                    return {
-                      x: lerp(prevPoint.x, point.x, smoothingFactor),
-                      y: lerp(prevPoint.y, point.y, smoothingFactor),
-                      z: lerp(prevPoint.z, point.z, smoothingFactor),
-                      visibility: point.visibility,
-                    };
-                  });
-                } else {
-                  // Si es el primer frame, no hay suavizado posible
-                  finalLandmarks = rawLandmarks;
-                }
+      // Realizamos el canvas y la predicción solo si el frame es válido
+      if (isValidFrame && video) {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
 
-                // Guardamos los puntos suavizados para el siguiente frame
-                prevLandmarksRef.current = finalLandmarks;
+          try {
+            const results: PoseLandmarkerResult =
+              poseLandmarkerRef.current!.detectForVideo(video, timestampForAI); // Obtenemos resultados del modelo en el instante de tiempo correspondiente
 
-                const ctx = canvas.getContext("2d");
-                if (ctx) {
-                  ctx.clearRect(0, 0, canvas.width, canvas.height);
-                  const drawingUtils = new DrawingUtils(ctx);
+            let finalLandmarks = null;
+            if (results.landmarks && results.landmarks.length > 0) {
+              const rawLandmarks = results.landmarks[0]; // Tomamos solo la primera persona detectada
 
-                  if (finalLandmarks) {
-                    // Dibujar Conexiones
-                    drawingUtils.drawConnectors(
-                      finalLandmarks,
-                      MY_CONNECTIONS,
-                      {
-                        color: "#ff5722",
-                        lineWidth: 4,
-                      },
-                    );
-
-                    // Dibujar Puntos
-                    RELEVANT_LANDMARKS.forEach((index) => {
-                      const point = finalLandmarks![index];
-                      if (point) {
-                        ctx.beginPath();
-                        ctx.arc(
-                          point.x * canvas.width,
-                          point.y * canvas.height,
-                          5,
-                          0,
-                          2 * Math.PI,
-                        );
-                        ctx.fillStyle = "#FFFFFF";
-                        ctx.fill();
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = "#ff5722";
-                        ctx.stroke();
-                      }
-                    });
-                  }
-                }
+              // Suavizado de puntos con interpolación lineal excepto la primera vez
+              if (prevLandmarksRef.current) {
+                finalLandmarks = rawLandmarks.map((point, index) => {
+                  const prevPoint = prevLandmarksRef.current![index];
+                  return {
+                    x: lerp(prevPoint.x, point.x, smoothingFactor),
+                    y: lerp(prevPoint.y, point.y, smoothingFactor),
+                    z: lerp(prevPoint.z, point.z, smoothingFactor),
+                    visibility: point.visibility,
+                  } as NormalizedLandmark;
+                });
               } else {
-                // Si no detecta nada, reseteamos la historia para que no salte
-                prevLandmarksRef.current = null;
+                finalLandmarks = rawLandmarks;
               }
-            } catch (error) {
-              console.error("Error procesando frame:", error);
+              prevLandmarksRef.current = finalLandmarks;
+
+              const ctx = canvas.getContext("2d");
+              if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const drawingUtils = new DrawingUtils(ctx);
+                // Dibujar esqueleto
+                if (finalLandmarks) {
+                  drawingUtils.drawConnectors(finalLandmarks, MY_CONNECTIONS, {
+                    color: "#ff5722",
+                    lineWidth: 4,
+                  });
+                  // Dibujar puntos relevantes
+                  RELEVANT_LANDMARKS.forEach((index) => {
+                    const point = finalLandmarks![index];
+                    if (point) {
+                      ctx.beginPath();
+                      ctx.arc(
+                        point.x * canvas.width,
+                        point.y * canvas.height,
+                        5,
+                        0,
+                        2 * Math.PI,
+                      );
+                      ctx.fillStyle = "#FFFFFF";
+                      ctx.fill();
+                      ctx.lineWidth = 2;
+                      ctx.strokeStyle = "#ff5722";
+                      ctx.stroke();
+                    }
+                  });
+                }
+              }
+            } else {
+              // No se detectaron puntos
+              prevLandmarksRef.current = null;
+              const ctx = canvas.getContext("2d");
+              if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
             }
-          }
-        } else {
-          // Limpieza visual si el frame no es válido
-          const canvas = canvasRef.current;
-          const ctx = canvas?.getContext("2d");
-          if (canvas && ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          } catch {
+            console.warn("Error durante la predicción del modelo.");
           }
         }
+      } else {
+        // El frame no es válido
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext("2d");
+        if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
-      requestRef.current = requestAnimationFrame(predictWebcam); // Llamado a predictWebcam antes del siguiente render
+
+      requestRef.current = requestAnimationFrame(predict); // Siguiente iteración recursiva
     };
 
-    requestRef.current = requestAnimationFrame(predictWebcam);
+    requestRef.current = requestAnimationFrame(predict); // Iniciar el loop
     return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current); // En caso de desmontar, cancelamos la animación
+      // Cancelar el requestAnimationFrame al desmontar o cambiar dependencias
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [smoothingFactor, isModelLoaded, webcamRunning, facingMode]);
+  }, [
+    smoothingFactor,
+    isModelLoaded,
+    webcamRunning,
+    facingMode,
+    mode,
+    videoSrc,
+  ]);
 
   // HANDLERS
+  // Manejo de permisos de cámara
   const handleUserMedia = () => {
-    console.log("Cámara detectada y autorizada");
     setCameraPermission(true);
     setWebcamRunning(true);
   };
 
-  const handleUserMediaError = (error: string | DOMException) => {
-    console.error("Error de cámara:", error);
+  // Manejo de error en permisos de cámara
+  const handleUserMediaError = () => {
     setCameraPermission(false);
     setWebcamRunning(false);
   };
 
-  // Función para cambiar de cámara
+  // Alternar cámara frontal/trasera
   const toggleCamera = () => {
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
   };
 
   return (
-    <div className="relative w-full h-[85vh] md:h-auto md:max-w-4xl md:aspect-video mx-auto bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
-      {/* 1. Loading IA */}
+    <div
+      ref={containerRef}
+      className="relative w-full h-[85vh] md:h-auto md:max-w-4xl md:aspect-video mx-auto bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10 group"
+    >
       {!isModelLoaded && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#2a2a2a] text-white">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
@@ -247,70 +329,108 @@ export default function Scanner({
         </div>
       )}
 
-      {/* 2. Error */}
-      {isModelLoaded && cameraPermission === false && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/90 text-white p-6 text-center">
-          <CameraOff className="w-16 h-16 text-red-500 mb-4" />
-          <h3 className="text-xl font-bold mb-2">Acceso a cámara denegado</h3>
-          <p className="text-white/60 mb-6 max-w-md">
-            Por favor permite el acceso a la cámara.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="flex items-center gap-2 px-6 py-3 bg-white/10 rounded-lg"
-          >
-            <RefreshCw className="w-4 h-4" /> Recargar
-          </button>
-        </div>
+      {mode === "live" && (
+        <>
+          {isModelLoaded && cameraPermission === false && (
+            <div className="absolute inset-0 z-40 bg-black/90 text-white p-6 text-center flex flex-col items-center justify-center">
+              <CameraOff className="w-16 h-16 text-red-500 mb-4" />
+              <p className="mb-4">Acceso denegado</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="cursor-pointer px-4 py-2 bg-white/10 rounded flex gap-2"
+              >
+                <RefreshCw /> Recargar
+              </button>
+            </div>
+          )}
+          <Webcam
+            ref={webcamRef}
+            mirrored={isMirrored}
+            onUserMedia={handleUserMedia}
+            onUserMediaError={handleUserMediaError}
+            videoConstraints={{
+              facingMode,
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            }}
+            className="absolute inset-0 w-full h-full object-cover"
+            controls={false}
+            disablePictureInPicture
+          />
+          {webcamRunning && (
+            <button
+              onClick={toggleCamera}
+              className="cursor-pointer absolute bottom-6 right-6 z-40 p-4 bg-primary/80 rounded-full text-white"
+            >
+              <SwitchCamera />
+            </button>
+          )}
+        </>
       )}
 
-      {/* 3. Webcam */}
-      <Webcam
-        ref={webcamRef}
-        mirrored={isMirrored} // Espejo dinámico
-        onUserMedia={handleUserMedia}
-        onUserMediaError={handleUserMediaError}
-        // --- OPTIMIZACIÓN DE PÍXELES ---
-        // Forzamos resolución VGA (640x480).
-        videoConstraints={{
-          facingMode: facingMode,
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        }}
-        // -------------------------------
-        disablePictureInPicture={true}
-        controls={false}
-        playsInline={true}
-        onContextMenu={(e) => e.preventDefault()}
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+      {mode === "file" && (
+        <>
+          {!videoSrc ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50">
+              <Upload className="w-16 h-16 mb-4 opacity-30" />
+              <p>Sube un video</p>
+            </div>
+          ) : (
+            <video
+              ref={fileVideoRef}
+              src={videoSrc}
+              className="absolute inset-0 w-full h-full object-contain bg-black [&::-webkit-media-controls-fullscreen-button]:hidden [&::-webkit-media-controls-overflow-button]:hidden"
+              controlsList="nofullscreen nodownload noremoteplayback noplaybackrate"
+              disablePictureInPicture
+              controls
+              playsInline
+              loop
+              crossOrigin="anonymous"
+              onPlay={() => setIsFilePlaying(true)}
+              onPause={() => setIsFilePlaying(false)}
+            />
+          )}
+        </>
+      )}
 
-      {/* Canvas con espejo condicional */}
       <canvas
         ref={canvasRef}
-        className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${
-          isMirrored ? "transform -scale-x-100" : ""
-        }`}
+        className={`absolute inset-0 w-full h-full pointer-events-none ${mode === "file" ? "object-contain" : "object-cover"} ${isMirrored ? "transform -scale-x-100" : ""}`}
       />
 
-      {/* 4. Indicador LIVE */}
-      {webcamRunning && (
-        <div className="absolute top-4 right-4 z-30 flex items-center gap-2 px-3 py-1 bg-black/50 rounded-full border border-white/10 backdrop-blur-md">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs font-mono text-white/80">VECTRA VISION</span>
+      <div className="absolute top-4 right-4 z-30 flex items-center gap-3">
+        <div className="flex items-center gap-2 px-3 py-1 bg-black/50 rounded-full border border-white/10 backdrop-blur-md">
+          {mode === "live" ? (
+            <>
+              <div
+                className={`w-2 h-2 rounded-full ${webcamRunning ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
+              />
+              <span className="text-xs font-mono text-white/80">LIVE</span>
+            </>
+          ) : (
+            <>
+              <Play
+                className={`w-3 h-3 ${isFilePlaying ? "text-green-500" : "text-white/50"}`}
+              />
+              <span className="text-xs font-mono text-white/80">REPLAY</span>
+            </>
+          )}
         </div>
-      )}
 
-      {/* 5. BOTÓN CAMBIAR CÁMARA  */}
-      {webcamRunning && (
-        <button
-          onClick={toggleCamera}
-          className="absolute bottom-6 right-6 z-40 p-4 bg-primary/80 hover:bg-primary text-white rounded-full shadow-lg backdrop-blur-sm transition-all active:scale-95"
-          title="Cambiar Cámara"
-        >
-          <SwitchCamera className="w-6 h-6" />
-        </button>
-      )}
+        {(webcamRunning || videoSrc) && (
+          <button
+            onClick={toggleFullscreen}
+            className="cursor-pointer p-1.5 bg-black/50 hover:bg-primary/80 text-white rounded-full border border-white/10 transition-colors backdrop-blur-md"
+            title={isFullscreen ? "Salir" : "Maximizar"}
+          >
+            {isFullscreen ? (
+              <Minimize className="w-4 h-4" />
+            ) : (
+              <Maximize className="w-4 h-4" />
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
