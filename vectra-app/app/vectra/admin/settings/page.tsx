@@ -5,6 +5,12 @@ import {
   getSmoothingFactor
 } from "@/app/lib/actions";
 import SettingsEditor from "@/app/components/admin/SettingsEditor";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Configuración',
+  description: 'Ajusta las configuraciones de Vectra desde el panel de administración.',
+};
 
 export const dynamic = "force-dynamic";
 

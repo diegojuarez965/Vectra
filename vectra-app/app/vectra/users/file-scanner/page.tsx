@@ -1,12 +1,17 @@
-import { getConfidenceThreshold, getSmoothingFactor  } from "@/app/lib/actions"; // Asumiendo que existe
+import { getConfidenceThreshold, getSmoothingFactor  } from "@/app/lib/actions";
 
 import FileScanner from "@/app/components/users/FileScanner";
 import { FileScan } from "lucide-react";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Analizar Archivo',
+  description: 'Sube grabaciones previas de entrenamientos para analizarlas con Vectra.',
+};
 
 export const dynamic = "force-dynamic";
 
 export default async function FileScannerPage() {
-  // Usamos Promise.all para cargar todo en paralelo
   const [confidence, smoothing] = await Promise.all([
     getConfidenceThreshold(),
     getSmoothingFactor(), 
@@ -26,7 +31,7 @@ export default async function FileScannerPage() {
             </h1>
         </div>
         <p className="text-white/60 max-w-2xl">
-          Sube grabaciones previas de entrenamientos para extraer métricas biomecánicas frame a frame.
+          Sube grabaciones previas de entrenamientos para analizarlas.
         </p>
       </div>
 

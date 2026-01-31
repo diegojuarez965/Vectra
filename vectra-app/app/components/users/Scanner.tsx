@@ -19,6 +19,10 @@ import {
   Maximize,
   Minimize,
 } from "lucide-react";
+import {
+  BicepCurlAnalyzer,
+  ExerciseFeedback,
+} from "@/app/utils/ExerciseAnalyzer";
 
 // Conexiones del esqueleto relevantes
 const MY_CONNECTIONS = [
@@ -49,6 +53,7 @@ interface ScannerProps {
   videoSrc?: string | null;
   confidence_threshold: number;
   smoothingFactor: number;
+  onFeedbackChange: (feedback: ExerciseFeedback | null) => void;
 }
 
 export default function Scanner({
@@ -56,6 +61,7 @@ export default function Scanner({
   videoSrc = null,
   confidence_threshold,
   smoothingFactor,
+  onFeedbackChange,
 }: ScannerProps) {
   // REFS
   const containerRef = useRef<HTMLDivElement>(null); // Contenedor principal
@@ -65,6 +71,10 @@ export default function Scanner({
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null); // Modelo de IA
   const requestRef = useRef<number>(0); // Referencia para requestAnimationFrame
   const prevLandmarksRef = useRef<NormalizedLandmark[] | null>(null); // Últimos puntos detectados
+  const analyzerRef = useRef<BicepCurlAnalyzer | null>(null); // Referencia al analizador
+  const lastFeedbackRef = useRef<ExerciseFeedback | null>(null); // Referencia al feedback anterior
+  const feedbackCooldownRef = useRef<number>(0); // Rerencia al tiempo del último error para dar tiempo a corregir la técnica
+  const COOLDOWN_MS = 5000; // 5 segundos de pausa
 
   // Referencias para la lógica de "Reloj Monotónico"
   const lastVideoTimeRef = useRef<number>(-1); // Último tiempo real de video procesado
@@ -80,8 +90,19 @@ export default function Scanner({
   const [isFilePlaying, setIsFilePlaying] = useState(false); // Estado del video
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user"); // Cámara frontal/trasera
   const [isFullscreen, setIsFullscreen] = useState(false); // Fullscreen
+  const [feedback, setFeedback] = useState<ExerciseFeedback | null>(null); // Feedback del ejercicio
 
   const isMirrored = mode === "live" && facingMode === "user"; // Espejado solo en modo "live" y cámara frontal
+
+  useEffect(() => {
+    analyzerRef.current = new BicepCurlAnalyzer();
+  }, []);
+
+  useEffect(() => {
+    if (onFeedbackChange) {
+      onFeedbackChange(feedback);
+    }
+  }, [feedback, onFeedbackChange]);
 
   // 1. Cargar el modelo de IA
   useEffect(() => {
@@ -232,6 +253,37 @@ export default function Scanner({
               }
               prevLandmarksRef.current = finalLandmarks;
 
+              // Lógica de COOLDOWN
+              const now = Date.now();
+              const isInCooldown =
+                now - feedbackCooldownRef.current < COOLDOWN_MS;
+
+              // Solo analizamos si no estamos en COOLDOWN
+              if (!isInCooldown) {
+                if (analyzerRef.current && finalLandmarks) {
+                  const analysisResult = analyzerRef.current.analyze(
+                    finalLandmarks,
+                    video.videoWidth,
+                    video.videoHeight,
+                  );
+
+                  // Actualizamos el feedback solo si ha cambiado
+                  if (
+                    analysisResult?.errorType !==
+                    lastFeedbackRef.current?.errorType
+                  ) {
+                    setFeedback(analysisResult);
+                    lastFeedbackRef.current = analysisResult;
+
+                    // Si detectamos un error activamos el COOLDOWN
+                    if (analysisResult !== null) {
+                      feedbackCooldownRef.current = now;
+                    }
+                  }
+                }
+              }
+
+              // Dibujar en el canvas
               const ctx = canvas.getContext("2d");
               if (ctx) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);

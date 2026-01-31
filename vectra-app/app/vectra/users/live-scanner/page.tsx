@@ -1,12 +1,44 @@
-import Scanner from '@/app/components/users/Scanner';
 import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/actions";
 
+import LiveScanner from "@/app/components/users/LiveScanner";
+import { FileScan } from "lucide-react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Analizar En Vivo",
+  description: "Analiza grabaciones en vivo para mejorar tu entrenamiento.",
+};
+
+export const dynamic = "force-dynamic";
+
 export default async function LiveScannerPage() {
-  const confidence_threshold = await getConfidenceThreshold();
-  const smoothing_factor = await getSmoothingFactor();
-  return(
-    <div className="flex flex-col items-center justify-center h-[85%] w-full text-white">
-      <Scanner  mode="live" confidence_threshold={confidence_threshold} smoothingFactor={smoothing_factor} />
+  const [confidence, smoothing] = await Promise.all([
+    getConfidenceThreshold(),
+    getSmoothingFactor(),
+  ]);
+
+  return (
+    <div className="h-full w-full overflow-y-auto bg-black p-4 md:p-8 text-white">
+      {/* HEADER DE LA PÁGINA */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <FileScan className="w-6 h-6 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Análisis en Vivo
+          </h1>
+        </div>
+        <p className="text-white/60 max-w-2xl">
+          Graba en vivo tu entrenamiento para analizarlo.
+        </p>
+      </div>
+
+      {/* COMPONENTE CLIENTE */}
+      <LiveScanner
+        confidenceThreshold={confidence}
+        smoothingFactor={smoothing}
+      />
     </div>
   );
 }
