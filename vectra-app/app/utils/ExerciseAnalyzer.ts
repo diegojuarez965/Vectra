@@ -70,7 +70,7 @@ export class BicepCurlAnalyzer {
 
   private readonly ROM_EXTENSION_TARGET = 150; // El brazo debe bajar hasta al menos 150°
   private readonly ROM_FLEXION_TARGET = 70; // El brazo debe subir hasta menos de 70°
-  private readonly MOVEMENT_THRESHOLD = 5; // Histéresis para detectar cambio de dirección
+  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
   private checkPosicionCodo = (

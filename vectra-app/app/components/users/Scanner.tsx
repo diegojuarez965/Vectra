@@ -160,15 +160,21 @@ export default function Scanner({
     // IMPORTANTE: No reseteamos highestTimestamp ni offset aquí para mantener la continuidad y evitar crashes.
   }, [videoSrc]);
 
-  // Listener Fullscreen
+  // Manejo de Fullscreen con Escape
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
     };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () =>
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, []);
+    if (isFullscreen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFullscreen]);
 
   // Toggle Fullscreen
   const toggleFullscreen = () => {
@@ -404,7 +410,7 @@ export default function Scanner({
       ${
         isFullscreen
           ? "fixed inset-0 z-100 w-screen h-dvh rounded-none border-none"
-          : "relative w-full h-[85dvh] md:h-auto md:max-w-4xl md:aspect-video mx-auto rounded-xl border border-white/10"
+          : "relative w-full h-full rounded-xl border border-white/10"
       }`}
     >
       {!isModelLoaded && (
@@ -468,10 +474,10 @@ export default function Scanner({
             <video
               ref={fileVideoRef}
               src={videoSrc}
-              className="absolute inset-0 w-full h-full object-contain bg-black [&::-webkit-media-controls-fullscreen-button]:hidden [&::-webkit-media-controls-overflow-button]:hidden"
-              controlsList="nofullscreen nodownload noremoteplayback noplaybackrate"
+              className="absolute inset-0 w-full h-full object-contain bg-black z-10 [&::-webkit-media-controls-fullscreen-button]:hidden"
+              controls={true}
+              controlsList="nodownload noremoteplayback"
               disablePictureInPicture
-              controls
               playsInline
               webkit-playsinline="true"
               loop
