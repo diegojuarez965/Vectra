@@ -171,17 +171,8 @@ export default function Scanner({
   }, []);
 
   // Toggle Fullscreen
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      try {
-        await containerRef.current.requestFullscreen();
-      } catch (err) {
-        console.error("Error fullscreen:", err);
-      }
-    } else {
-      document.exitFullscreen();
-    }
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
   };
 
   // 2. Loop de Detección
@@ -281,9 +272,10 @@ export default function Scanner({
                 finalLandmarks = rawLandmarks;
               }
               prevLandmarksRef.current = finalLandmarks;
-              
+
               // Lógica de repeticiones
-              const repetitionCount = analyzerRef.current?.repetitionCounter || 0;
+              const repetitionCount =
+                analyzerRef.current?.repetitionCounter || 0;
               // Actualizamos solo si ha cambiado
               if (repetitionCount !== repeticiones) {
                 setRepeticiones(repetitionCount);
@@ -384,7 +376,7 @@ export default function Scanner({
     facingMode,
     mode,
     videoSrc,
-    repeticiones
+    repeticiones,
   ]);
 
   // HANDLERS
@@ -408,7 +400,12 @@ export default function Scanner({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[85vh] md:h-auto md:max-w-4xl md:aspect-video mx-auto bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10 group"
+      className={`bg-black overflow-hidden shadow-2xl group transition-all duration-300
+      ${
+        isFullscreen
+          ? "fixed inset-0 z-100 w-screen h-dvh rounded-none border-none"
+          : "relative w-full h-[85dvh] md:h-auto md:max-w-4xl md:aspect-video mx-auto rounded-xl border border-white/10"
+      }`}
     >
       {!isModelLoaded && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#2a2a2a] text-white">
@@ -446,13 +443,15 @@ export default function Scanner({
             className="absolute inset-0 w-full h-full object-cover"
             controls={false}
             disablePictureInPicture
+            playsInline
           />
           {webcamRunning && (
             <button
               onClick={toggleCamera}
-              className="cursor-pointer absolute bottom-6 right-6 z-40 p-4 bg-primary/80 rounded-full text-white"
+              className="cursor-pointer absolute top-4 left-4 z-60 p-3 bg-black/50 hover:bg-primary/80 text-white rounded-full border border-white/10 backdrop-blur-md transition-all active:scale-95"
+              title="Cambiar cámara"
             >
-              <SwitchCamera />
+              <SwitchCamera className="w-5 h-5" />
             </button>
           )}
         </>
@@ -474,6 +473,7 @@ export default function Scanner({
               disablePictureInPicture
               controls
               playsInline
+              webkit-playsinline="true"
               loop
               crossOrigin="anonymous"
               onPlay={() => setIsFilePlaying(true)}
@@ -488,7 +488,7 @@ export default function Scanner({
         className={`absolute inset-0 w-full h-full pointer-events-none ${mode === "file" ? "object-contain" : "object-cover"} ${isMirrored ? "transform -scale-x-100" : ""}`}
       />
 
-      <div className="absolute top-4 right-4 z-30 flex items-center gap-3">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
         <div className="flex items-center gap-2 px-3 py-1 bg-black/50 rounded-full border border-white/10 backdrop-blur-md">
           {mode === "live" ? (
             <>

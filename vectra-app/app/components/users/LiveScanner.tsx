@@ -3,11 +3,9 @@
 import { useState, useEffect } from "react";
 import {
   Camera,
-  Activity,
   AlertCircle,
   CheckCircle2,
   Dumbbell,
-  Radio,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -40,7 +38,7 @@ export default function LiveScanner({
   const [repeticiones, setRepeticiones] = useState(0);
 
   // Estado para el Mute
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   // Hook de voz
   const { speak, cancel } = useTextToSpeech();
@@ -145,7 +143,7 @@ export default function LiveScanner({
         <div className="lg:col-span-3 flex flex-col gap-4">
           {/* Tarjeta de Feedback Principal */}
           <div className="flex-1 bg-black/20 backdrop-blur-md rounded-2xl md:rounded-3xl p-5 md:p-6 border border-foreground/10 flex flex-col relative overflow-hidden min-h-50 md:min-h-62.5">
-            <div className="flex items-center gap-2 mb-4 md:mb-6 text-primary">
+            <div className="flex items-center justify-center gap-2 mb-4 md:mb-6 text-primary">
               <Dumbbell className="w-4 h-4 md:w-5 md:h-5" />
               <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest font-mono">
                 Entrenador Virtual
@@ -185,50 +183,18 @@ export default function LiveScanner({
             </div>
           </div>
 
-          {/* Tarjeta de Métricas */}
+          {/* Tarjeta de Repeticiones */}
           <div className="bg-black/20 backdrop-blur-md rounded-2xl md:rounded-3xl p-5 md:p-6 border border-foreground/10">
-            <div className="flex items-center gap-2 mb-4 text-foreground/40">
-              <Activity className="w-4 h-4" />
+            <div className="flex items-center justify-center gap-2 mb-4 md:mb-6 text-primary">
+              <Dumbbell className="w-4 h-4 md:w-5 md:h-5" />
               <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest font-mono">
-                Sensores
+                Repeticiones
               </span>
             </div>
-
-            <div className="text-center mb-4">
-              <p className="text-xs md:text-sm text-foreground/50">
-                Repeticiones Completadas
-              </p>
-              <span className="text-2xl md:text-3xl font-bold text-primary">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-lg md:text-2xl font-bold text-foreground">
                 {repeticiones}
               </span>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-xs md:text-sm mb-1">
-                  <span className="text-foreground/60">Confianza</span>
-                  <span className="text-foreground font-bold">
-                    {(confidenceThreshold * 100).toFixed(0)}%
-                  </span>
-                </div>
-                <div className="h-2 bg-foreground/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-[95%] shadow-[0_0_10px_rgba(var(--primary),0.5)]"></div>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-foreground/10">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] md:text-xs text-foreground/50">
-                    Señal
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Radio className="w-3 h-3 text-green-500 animate-pulse" />
-                    <span className="text-[10px] md:text-xs font-bold text-green-500 uppercase tracking-wider">
-                      Estable
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
