@@ -18,6 +18,9 @@ import {
   Upload,
   Maximize,
   Minimize,
+  VolumeX,
+  Volume2,
+  Pause,
 } from "lucide-react";
 import {
   BicepCurlAnalyzer,
@@ -95,6 +98,12 @@ export default function Scanner({
   const [feedback, setFeedback] = useState<ExerciseFeedback | null>(null); // Feedback del ejercicio
   const [repeticiones, setRepeticiones] = useState(0); // Contador de repeticiones
 
+  // Estados de Reproductor Personalizado
+  const [currentTime, setCurrentTime] = useState(0); // Tiempo actual
+  const [duration, setDuration] = useState(0); // Duración total
+  const [isMuted, setIsMuted] = useState(false); // Mute
+  const [showControls, setShowControls] = useState(true); // Mostrar controles
+
   const isMirrored = mode === "live" && facingMode === "user"; // Espejado solo en modo "live" y cámara frontal
 
   useEffect(() => {
@@ -112,6 +121,72 @@ export default function Scanner({
       onRepetitionChange(repeticiones);
     }
   }, [repeticiones, onRepetitionChange]);
+
+  // --- LOGICA DEL REPRODUCTOR CUSTOM ---
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    if (isFullscreen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFullscreen]);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
+  };
+
+  const togglePlayPause = () => {
+    if (fileVideoRef.current) {
+      if (isFilePlaying) {
+        fileVideoRef.current.pause();
+      } else {
+        fileVideoRef.current.play();
+      }
+      setIsFilePlaying(!isFilePlaying);
+    }
+  };
+
+  const toggleMute = () => {
+    if (fileVideoRef.current) {
+      fileVideoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (fileVideoRef.current) {
+      setCurrentTime(fileVideoRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (fileVideoRef.current) {
+      setDuration(fileVideoRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (fileVideoRef.current) {
+      fileVideoRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+  };
 
   // 1. Cargar el modelo de IA
   useEffect(() => {
@@ -159,27 +234,6 @@ export default function Scanner({
     lastVideoTimeRef.current = -1;
     // IMPORTANTE: No reseteamos highestTimestamp ni offset aquí para mantener la continuidad y evitar crashes.
   }, [videoSrc]);
-
-  // Manejo de Fullscreen con Escape
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && isFullscreen) {
-        setIsFullscreen(false);
-      }
-    };
-    if (isFullscreen) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isFullscreen]);
-
-  // Toggle Fullscreen
-  const toggleFullscreen = () => {
-    setIsFullscreen((prev) => !prev);
-  };
 
   // 2. Loop de Detección
   useEffect(() => {
@@ -406,13 +460,18 @@ export default function Scanner({
   return (
     <div
       ref={containerRef}
+      // Al hacer click en el contenedor, mostramos/ocultamos controles
+      onClick={() => setShowControls((prev) => !prev)}
       className={`bg-black overflow-hidden shadow-2xl group transition-all duration-300
       ${
         isFullscreen
           ? "fixed inset-0 z-100 w-screen h-dvh rounded-none border-none"
           : "relative w-full h-full rounded-xl border border-white/10"
       }`}
+      // Evita scroll accidental en móvil fullscreen
+      style={{ touchAction: isFullscreen ? "none" : "auto" }}
     >
+      {/* Loader */}
       {!isModelLoaded && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#2a2a2a] text-white">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
@@ -422,6 +481,7 @@ export default function Scanner({
         </div>
       )}
 
+      {/* --- MODO LIVE (WEBCAM) --- */}
       {mode === "live" && (
         <>
           {isModelLoaded && cameraPermission === false && (
@@ -430,7 +490,7 @@ export default function Scanner({
               <p className="mb-4">Acceso denegado</p>
               <button
                 onClick={() => window.location.reload()}
-                className="cursor-pointer px-4 py-2 bg-white/10 rounded flex gap-2"
+                className="px-4 py-2 bg-white/10 rounded flex gap-2"
               >
                 <RefreshCw /> Recargar
               </button>
@@ -448,14 +508,15 @@ export default function Scanner({
             }}
             className="absolute inset-0 w-full h-full object-cover"
             controls={false}
-            disablePictureInPicture
             playsInline
           />
           {webcamRunning && (
             <button
-              onClick={toggleCamera}
-              className="cursor-pointer absolute top-4 left-4 z-60 p-3 bg-black/50 hover:bg-primary/80 text-white rounded-full border border-white/10 backdrop-blur-md transition-all active:scale-95"
-              title="Cambiar cámara"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCamera();
+              }}
+              className="cursor-pointer absolute top-4 left-4 z-60 p-3 bg-black/50 hover:bg-primary/80 text-white rounded-full border border-white/10 backdrop-blur-md"
             >
               <SwitchCamera className="w-5 h-5" />
             </button>
@@ -463,6 +524,7 @@ export default function Scanner({
         </>
       )}
 
+      {/* --- MODO FILE (VIDEO) --- */}
       {mode === "file" && (
         <>
           {!videoSrc ? (
@@ -471,30 +533,101 @@ export default function Scanner({
               <p>Sube un video</p>
             </div>
           ) : (
-            <video
-              ref={fileVideoRef}
-              src={videoSrc}
-              className="absolute inset-0 w-full h-full object-contain bg-black z-10 [&::-webkit-media-controls-fullscreen-button]:hidden"
-              controls={true}
-              controlsList="nodownload noremoteplayback"
-              disablePictureInPicture
-              playsInline
-              webkit-playsinline="true"
-              loop
-              crossOrigin="anonymous"
-              onPlay={() => setIsFilePlaying(true)}
-              onPause={() => setIsFilePlaying(false)}
-            />
+            <>
+              {/* VIDEO SIN CONTROLES NATIVOS */}
+              <video
+                ref={fileVideoRef}
+                src={videoSrc}
+                className="absolute inset-0 w-full h-full object-contain bg-black z-10"
+                controls={false}
+                playsInline
+                webkit-playsinline="true"
+                loop
+                crossOrigin="anonymous"
+                onPlay={() => setIsFilePlaying(true)}
+                onPause={() => setIsFilePlaying(false)}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+              />
+
+              {/* BARRA DE CONTROLES PERSONALIZADA */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className={`absolute bottom-0 left-0 right-0 z-60 bg-linear-to-t from-black/90 via-black/60 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+              >
+                <div className="flex flex-col gap-2 max-w-4xl mx-auto w-full">
+                  {/* 1. BARRA DE ADELANTAMIENTO (Seek Bar) */}
+                  <div className="flex items-center gap-3 text-white text-xs font-mono font-medium">
+                    <span className="min-w-10 text-right">
+                      {formatTime(currentTime)}
+                    </span>
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration || 100}
+                      value={currentTime}
+                      onChange={handleSeek}
+                      className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg"
+                    />
+                    <span className="min-w-40px">{formatTime(duration)}</span>
+                  </div>
+
+                  {/* 2. BOTONERA INFERIOR */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-6">
+                      {/* Play/Pause */}
+                      <button
+                        onClick={togglePlayPause}
+                        className="cursor-pointer text-white hover:text-primary transition-transform active:scale-90"
+                      >
+                        {isFilePlaying ? (
+                          <Pause className="w-7 h-7 fill-current" />
+                        ) : (
+                          <Play className="w-7 h-7 fill-current" />
+                        )}
+                      </button>
+
+                      {/* Botón de Sonido */}
+                      <button
+                        onClick={toggleMute}
+                        className="cursor-pointer text-white hover:text-primary transition-transform active:scale-90"
+                      >
+                        {isMuted ? (
+                          <VolumeX className="w-6 h-6 text-red-400" />
+                        ) : (
+                          <Volume2 className="w-6 h-6" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Botón Fullscreen */}
+                    <button
+                      onClick={toggleFullscreen}
+                      className="cursor-pointer text-white hover:text-primary transition-transform active:scale-90"
+                    >
+                      {isFullscreen ? (
+                        <Minimize className="w-6 h-6" />
+                      ) : (
+                        <Maximize className="w-6 h-6" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </>
       )}
 
+      {/* --- CANVAS (Líneas MediaPipe) --- */}
+      {/* z-20: Encima del video, Debajo de los controles */}
       <canvas
         ref={canvasRef}
-        className={`absolute inset-0 w-full h-full pointer-events-none ${mode === "file" ? "object-contain" : "object-cover"} ${isMirrored ? "transform -scale-x-100" : ""}`}
+        className={`absolute inset-0 w-full h-full pointer-events-none z-20 ${mode === "file" ? "object-contain" : "object-cover"} ${isMirrored ? "transform -scale-x-100" : ""}`}
       />
 
-      <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+      {/* --- BADGES SUPERIORES --- */}
+      <div className="absolute top-4 right-4 z-50 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1 bg-black/50 rounded-full border border-white/10 backdrop-blur-md">
           {mode === "live" ? (
             <>
@@ -512,21 +645,25 @@ export default function Scanner({
             </>
           )}
         </div>
+      </div>
 
-        {(webcamRunning || videoSrc) && (
+      {/* Botón fullscreen para Live (Solo aparece en Webcam) */}
+      {mode === "live" && webcamRunning && (
+        <div className="absolute top-4 right-4 z-60 mt-10">
+          {" "}
+          {/* Ajustado para no tapar el badge */}
           <button
             onClick={toggleFullscreen}
-            className="cursor-pointer p-1.5 bg-black/50 hover:bg-primary/80 text-white rounded-full border border-white/10 transition-colors backdrop-blur-md"
-            title={isFullscreen ? "Salir" : "Maximizar"}
+            className="hover:bg-primary/80 cursor-pointer p-2 bg-black/50 text-white rounded-full border border-white/10 backdrop-blur-md"
           >
             {isFullscreen ? (
-              <Minimize className="w-4 h-4" />
+              <Minimize className="w-5 h-5" />
             ) : (
-              <Maximize className="w-4 h-4" />
+              <Maximize className="w-5 h-5" />
             )}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
