@@ -20,12 +20,24 @@ interface LiveScannerProps {
   smoothingFactor: number;
 }
 
+const POSITIVE_MESSAGES = [
+  "Excelente técnica sigue así.",
+  "Muy bien mantén el ritmo.",
+  "Perfecto esa es la postura.",
+  "Bien hecho continúa.",
+];
+
 export default function LiveScanner({
   confidenceThreshold,
   smoothingFactor,
 }: LiveScannerProps) {
   const [currentFeedback, setCurrentFeedback] =
-    useState<ExerciseFeedback | null>(null);
+    useState<ExerciseFeedback | null>({
+      errorType: "Sistema",
+      message: "Cargando...",
+    });
+
+  const [repeticiones, setRepeticiones] = useState(0);
 
   // Estado para el Mute
   const [isMuted, setIsMuted] = useState(false);
@@ -35,9 +47,33 @@ export default function LiveScanner({
 
   // Efecto para hablar
   useEffect(() => {
-    if (currentFeedback && !isMuted && currentFeedback.message) {
-      speak(currentFeedback.message);
-    }
+    const triggerSpeach = () => {
+      // Si estamos mutados no hacemos nada
+      if (isMuted) return;
+      let textToSpeak = "";
+      if (currentFeedback && currentFeedback.message) {
+        // Caso error
+        textToSpeak = currentFeedback.message;
+      } else {
+        // Caso positivo
+        textToSpeak =
+          POSITIVE_MESSAGES[
+            Math.floor(Math.random() * POSITIVE_MESSAGES.length)
+          ];
+      }
+      speak(textToSpeak);
+    };
+
+    // Ejecutamos cada vez que cambia el estado
+    triggerSpeach();
+
+    // Configurar el intervalo de 10 segundos
+    const intervalId = setInterval(() => {
+      triggerSpeach();
+    }, 10000);
+
+    // Borramos el intervalo anterior para que no se mezclen las voces.
+    return () => clearInterval(intervalId);
   }, [currentFeedback, isMuted, speak]);
 
   // Efecto para cancelar la voz
@@ -100,6 +136,7 @@ export default function LiveScanner({
               confidence_threshold={confidenceThreshold}
               smoothingFactor={smoothingFactor}
               onFeedbackChange={setCurrentFeedback}
+              onRepetitionChange={setRepeticiones}
             />
           </div>
         </div>
@@ -123,7 +160,7 @@ export default function LiveScanner({
                     <AlertCircle className="w-6 h-6 md:w-8 md:h-8" />
                   </div>
                   <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 leading-tight">
-                    Corrección Técnica
+                    Corrección
                   </h3>
                   <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-3 md:p-4 mt-2">
                     <p className="text-xs md:text-sm text-red-200/90 font-medium">
@@ -132,16 +169,16 @@ export default function LiveScanner({
                   </div>
                 </div>
               ) : (
-                // ESTADO: BUENA FORMA / ESPERA
+                // ESTADO: BUENA FORMA
                 <div className="animate-in fade-in duration-500 opacity-60 hover:opacity-100 transition-opacity">
                   <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mb-3 md:mb-4 border border-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]">
                     <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8" />
                   </div>
                   <h3 className="text-base md:text-lg font-bold text-foreground mb-2">
-                    Buscando Ejercicio
+                    Buena Forma
                   </h3>
                   <p className="text-xs md:text-sm text-foreground/50">
-                    Colócate frente a la cámara para iniciar el análisis.
+                    Todo parece ir bien.
                   </p>
                 </div>
               )}
@@ -154,6 +191,15 @@ export default function LiveScanner({
               <Activity className="w-4 h-4" />
               <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest font-mono">
                 Sensores
+              </span>
+            </div>
+
+            <div className="text-center mb-4">
+              <p className="text-xs md:text-sm text-foreground/50">
+                Repeticiones Completadas
+              </p>
+              <span className="text-2xl md:text-3xl font-bold text-primary">
+                {repeticiones}
               </span>
             </div>
 

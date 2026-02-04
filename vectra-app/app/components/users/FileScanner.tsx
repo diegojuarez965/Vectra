@@ -21,6 +21,13 @@ interface FileScannerProps {
   smoothingFactor: number;
 }
 
+const POSITIVE_MESSAGES = [
+  "Excelente técnica sigue así.",
+  "Muy bien mantén el ritmo.",
+  "Perfecto esa es la postura.",
+  "Bien hecho continúa.",
+];
+
 export default function FileScanner({
   confidenceThreshold,
   smoothingFactor,
@@ -32,7 +39,12 @@ export default function FileScanner({
 
   // Estado para el feedback
   const [currentFeedback, setCurrentFeedback] =
-    useState<ExerciseFeedback | null>(null);
+    useState<ExerciseFeedback | null>({
+      errorType: "Sistema",
+      message: "Cargando...",
+    });
+
+  const [repeticiones, setRepeticiones] = useState(0);
 
   // Estado para Mute
   const [isMuted, setIsMuted] = useState(false);
@@ -53,11 +65,35 @@ export default function FileScanner({
     };
   }, [videoSrc, cancel]);
 
-  // Efecto para hablar cuando llega feedback
+  // Efecto para hablar
   useEffect(() => {
-    if (currentFeedback && !isMuted && currentFeedback.message) {
-      speak(currentFeedback.message);
-    }
+    const triggerSpeach = () => {
+      // Si estamos mutados no hacemos nada
+      if (isMuted) return;
+      let textToSpeak = "";
+      if (currentFeedback && currentFeedback.message) {
+        // Caso error
+        textToSpeak = currentFeedback.message;
+      } else {
+        // Caso positivo
+        textToSpeak =
+          POSITIVE_MESSAGES[
+            Math.floor(Math.random() * POSITIVE_MESSAGES.length)
+          ];
+      }
+      speak(textToSpeak);
+    };
+
+    // Ejecutamos cada vez que cambia el estado
+    triggerSpeach();
+
+    // Configurar el intervalo de 10 segundos
+    const intervalId = setInterval(() => {
+      triggerSpeach();
+    }, 10000);
+
+    // Borramos el intervalo anterior para que no se mezclen las voces.
+    return () => clearInterval(intervalId);
   }, [currentFeedback, isMuted, speak]);
 
   // Efecto para cancelar la voz cuando se mutee
@@ -214,6 +250,7 @@ export default function FileScanner({
                 confidence_threshold={confidenceThreshold}
                 smoothingFactor={smoothingFactor}
                 onFeedbackChange={setCurrentFeedback}
+                onRepetitionChange={setRepeticiones}
               />
             </div>
           </div>
@@ -237,7 +274,7 @@ export default function FileScanner({
                       <AlertCircle className="w-6 h-6 md:w-8 md:h-8" />
                     </div>
                     <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 leading-tight">
-                      Corrección Técnica
+                      Corrección
                     </h3>
                     <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-3 md:p-4 mt-2">
                       <p className="text-xs md:text-sm text-red-200/90 font-medium">
@@ -252,10 +289,10 @@ export default function FileScanner({
                       <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8" />
                     </div>
                     <h3 className="text-base md:text-lg font-bold text-foreground mb-2">
-                      Movimiento Óptimo
+                      Buena Forma
                     </h3>
                     <p className="text-xs md:text-sm text-foreground/50">
-                      Mantén la tensión y el ritmo. Tu técnica se ve sólida.
+                      Todo parece ir bien.
                     </p>
                   </div>
                 )}
@@ -268,6 +305,15 @@ export default function FileScanner({
                 <Activity className="w-4 h-4" />
                 <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest font-mono">
                   Métricas en vivo
+                </span>
+              </div>
+
+              <div className="text-center mb-4">
+                <p className="text-xs md:text-sm text-foreground/50">
+                  Repeticiones Completadas
+                </p>
+                <span className="text-2xl md:text-3xl font-bold text-primary">
+                  {repeticiones}
                 </span>
               </div>
 

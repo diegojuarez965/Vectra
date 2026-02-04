@@ -54,6 +54,7 @@ interface ScannerProps {
   confidence_threshold: number;
   smoothingFactor: number;
   onFeedbackChange: (feedback: ExerciseFeedback | null) => void;
+  onRepetitionChange: (repeticiones: number) => void;
 }
 
 export default function Scanner({
@@ -62,6 +63,7 @@ export default function Scanner({
   confidence_threshold,
   smoothingFactor,
   onFeedbackChange,
+  onRepetitionChange,
 }: ScannerProps) {
   // REFS
   const containerRef = useRef<HTMLDivElement>(null); // Contenedor principal
@@ -91,6 +93,7 @@ export default function Scanner({
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user"); // Cámara frontal/trasera
   const [isFullscreen, setIsFullscreen] = useState(false); // Fullscreen
   const [feedback, setFeedback] = useState<ExerciseFeedback | null>(null); // Feedback del ejercicio
+  const [repeticiones, setRepeticiones] = useState(0); // Contador de repeticiones
 
   const isMirrored = mode === "live" && facingMode === "user"; // Espejado solo en modo "live" y cámara frontal
 
@@ -103,6 +106,12 @@ export default function Scanner({
       onFeedbackChange(feedback);
     }
   }, [feedback, onFeedbackChange]);
+
+  useEffect(() => {
+    if (onRepetitionChange) {
+      onRepetitionChange(repeticiones);
+    }
+  }, [repeticiones, onRepetitionChange]);
 
   // 1. Cargar el modelo de IA
   useEffect(() => {
@@ -177,12 +186,32 @@ export default function Scanner({
 
   // 2. Loop de Detección
   useEffect(() => {
-    // Controles de condición iniciales
-    if (!isModelLoaded) return;
-    if (mode === "live" && !webcamRunning) return;
-    if (mode === "file" && !videoSrc) return;
-
     const predict = () => {
+      const feedbackCargando = {
+        errorType: "Sistema",
+        message: "Cargando...",
+      };
+
+      const setFeedbackCargando = () => {
+        if (feedbackCargando.message !== lastFeedbackRef.current?.message) {
+          setFeedback(feedbackCargando);
+          lastFeedbackRef.current = feedbackCargando;
+        }
+      };
+      // Controles de condición iniciales
+      if (!isModelLoaded) {
+        setFeedbackCargando();
+        return;
+      }
+      if (mode === "live" && !webcamRunning) {
+        setFeedbackCargando();
+        return;
+      }
+      if (mode === "file" && !videoSrc) {
+        setFeedbackCargando();
+        return;
+      }
+
       let video: HTMLVideoElement | null = null; // Fuente de video
       let realVideoTime = 0; // Tiempo real del video
       let timestampForAI = 0; // Timestamp a enviar al modelo
@@ -252,12 +281,18 @@ export default function Scanner({
                 finalLandmarks = rawLandmarks;
               }
               prevLandmarksRef.current = finalLandmarks;
+              
+              // Lógica de repeticiones
+              const repetitionCount = analyzerRef.current?.repetitionCounter || 0;
+              // Actualizamos solo si ha cambiado
+              if (repetitionCount !== repeticiones) {
+                setRepeticiones(repetitionCount);
+              }
 
               // Lógica de COOLDOWN
               const now = Date.now();
               const isInCooldown =
                 now - feedbackCooldownRef.current < COOLDOWN_MS;
-
               // Solo analizamos si no estamos en COOLDOWN
               if (!isInCooldown) {
                 if (analyzerRef.current && finalLandmarks) {
@@ -269,8 +304,7 @@ export default function Scanner({
 
                   // Actualizamos el feedback solo si ha cambiado
                   if (
-                    analysisResult?.errorType !==
-                    lastFeedbackRef.current?.errorType
+                    analysisResult?.message !== lastFeedbackRef.current?.message
                   ) {
                     setFeedback(analysisResult);
                     lastFeedbackRef.current = analysisResult;
@@ -317,16 +351,19 @@ export default function Scanner({
               }
             } else {
               // No se detectaron puntos
+              setFeedbackCargando();
               prevLandmarksRef.current = null;
               const ctx = canvas.getContext("2d");
               if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
             }
           } catch {
+            setFeedback(feedbackCargando);
             console.warn("Error durante la predicción del modelo.");
           }
         }
       } else {
         // El frame no es válido
+        setFeedbackCargando();
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d");
         if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -347,6 +384,7 @@ export default function Scanner({
     facingMode,
     mode,
     videoSrc,
+    repeticiones
   ]);
 
   // HANDLERS
