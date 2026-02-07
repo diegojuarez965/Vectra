@@ -1,15 +1,15 @@
-import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import postgres from 'postgres';
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import postgres from "postgres";
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 export async function POST(req: Request) {
   try {
     const { token, password } = await req.json();
 
     if (!token || !password) {
-      return NextResponse.json({ message: 'Faltan datos.' }, { status: 400 });
+      return NextResponse.json({ message: "Faltan datos." }, { status: 400 });
     }
 
     // Buscar el usuario con el token válido y no vencido
@@ -21,7 +21,10 @@ export async function POST(req: Request) {
 
     const resetEntry = result[0];
     if (!resetEntry) {
-      return NextResponse.json({ message: 'Token inválido o expirado.' }, { status: 400 });
+      return NextResponse.json(
+        { message: "Token inválido o expirado." },
+        { status: 400 },
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -38,9 +41,12 @@ export async function POST(req: Request) {
       DELETE FROM password_reset_tokens WHERE token = ${token}
     `;
 
-    return NextResponse.json({ message: 'Contraseña actualizada con éxito.' });
+    return NextResponse.json({ message: "Contraseña actualizada con éxito." });
   } catch (error) {
-    console.error('Error al restablecer contraseña:', error);
-    return NextResponse.json({ message: 'Error del servidor.' }, { status: 500 });
+    console.error("Error al restablecer contraseña:", error);
+    return NextResponse.json(
+      { message: "Error del servidor." },
+      { status: 500 },
+    );
   }
 }

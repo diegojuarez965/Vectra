@@ -1,17 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import RegisterForm from "@/app/components/RegisterForm"; // Asegúrate de la ruta correcta
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Registro",
-  description: "Crea tu cuenta para comenzar el análisis biomecánico con IA.",
-};
+import RegisterForm from "@/app/components/RegisterForm";
 
 export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col justify-start py-12 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
-      {/* Fondo decorativo (Glow) - Igual que en Login */}
+      {/* Fondo decorativo */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 h-125 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Encabezado */}
@@ -27,7 +21,7 @@ export default function RegisterPage() {
           </div>
         </Link>
 
-        <h2 className="text-3xl font-bold text-white tracking-tight">
+        <h2 className="text-3xl font-bold text-foreground tracking-tight">
           Únete a Vectra
         </h2>
         <p className="mt-2 text-sm text-white/60">
@@ -46,7 +40,6 @@ export default function RegisterPage() {
                 <div className="w-full border-t border-white/10" />
               </div>
               <div className="relative flex justify-center text-sm">
-                {/* IMPORTANTE: bg-[#4a4a4a] debe coincidir con el fondo de la tarjeta */}
                 <span className="px-2 bg-[#4a4a4a] text-white/50">
                   ¿Ya tienes una cuenta?
                 </span>

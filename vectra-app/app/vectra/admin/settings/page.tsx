@@ -2,23 +2,22 @@ import {
   getMaintenanceMode,
   getNoRegisterMode,
   getConfidenceThreshold,
-  getSmoothingFactor
+  getSmoothingFactor,
 } from "@/app/lib/actions";
 import SettingsEditor from "@/app/components/admin/SettingsEditor";
-import { Metadata } from 'next';
+import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Configuración',
-  description: 'Ajusta las configuraciones de Vectra desde el panel de administración.',
+  title: "Configuración",
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
-  const isMaintenanceActive = await getMaintenanceMode();
-  const isNoRegisterActive = await getNoRegisterMode();
-  const confidenceThreshold = await getConfidenceThreshold();
-  const smoothingFactor = await getSmoothingFactor();
+  const isMaintenanceActive = await getMaintenanceMode(); // Obtener el estado actual del modo mantenimiento
+  const isNoRegisterActive = await getNoRegisterMode(); // Obtener el estado actual del modo sin registro
+  const confidenceThreshold = await getConfidenceThreshold(); // Obtener el umbral de confianza
+  const smoothingFactor = await getSmoothingFactor(); // Obtener el factor de suavizado
 
   return (
     <SettingsEditor

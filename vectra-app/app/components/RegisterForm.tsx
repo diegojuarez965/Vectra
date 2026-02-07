@@ -6,13 +6,13 @@ import { useActionState, useState } from "react";
 
 export default function RegisterForm() {
   const initialState: UserState = { message: "", errors: {} };
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [state, formAction, isPending] = useActionState(
     registerUser,
-    initialState
+    initialState,
   );
 
   return (
@@ -33,7 +33,7 @@ export default function RegisterForm() {
             name="name"
             type="text"
             placeholder="Juan Pérez"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
         </div>
         {state.errors?.name && (
@@ -57,7 +57,7 @@ export default function RegisterForm() {
             name="email"
             type="email"
             placeholder="usuario@ejemplo.com"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
         </div>
         {state.errors?.email && (
@@ -82,16 +82,16 @@ export default function RegisterForm() {
           <input
             id="password"
             name="password"
-            type={showPassword ? "text" : "password"} 
+            type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
-          
+
           {/* Botón Toggle Password */}
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-primary hover:text-orange-600 transition-colors"
           >
             {showPassword ? (
               <EyeOff className="h-5 w-5" />
@@ -122,16 +122,16 @@ export default function RegisterForm() {
           <input
             id="confirm-password"
             name="confirm-password"
-            type={showConfirmPassword ? "text" : "password"} 
+            type={showConfirmPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
 
           {/* Botón Toggle Confirm Password */}
           <button
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-primary hover:text-orange-600 transition-colors"
           >
             {showConfirmPassword ? (
               <EyeOff className="h-5 w-5" />
@@ -151,7 +151,7 @@ export default function RegisterForm() {
       <button
         type="submit"
         disabled={isPending}
-        className={`w-full flex items-center justify-center gap-2 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg mt-4 ${
+        className={`w-full flex items-center justify-center gap-2 text-foreground font-bold py-3 px-4 rounded-lg transition-all shadow-lg mt-4 ${
           isPending
             ? "bg-primary/50 cursor-not-allowed opacity-70"
             : "bg-primary hover:bg-orange-600 shadow-orange-900/20 hover:shadow-orange-900/40 transform hover:-translate-y-0.5 cursor-pointer"

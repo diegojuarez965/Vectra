@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 
 export const useTextToSpeech = () => {
-
   // Función para cancelar la sintesis
   const cancel = useCallback(() => {
     if ("speechSynthesis" in window) {

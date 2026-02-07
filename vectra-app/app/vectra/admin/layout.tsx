@@ -14,7 +14,7 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col md:flex-row h-screen">
+    <div className="flex flex-col md:flex-row min-h-screen">
       <div className="w-full md:w-64 shrink-0">
         <SideNav />
       </div>

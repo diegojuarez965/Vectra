@@ -8,8 +8,8 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowRight,
-  Eye,       
-  EyeOff,   
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function ResetPasswordForm() {
@@ -20,7 +20,7 @@ export default function ResetPasswordForm() {
   // Estados
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  
+
   // Estados para visibilidad
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -79,7 +79,7 @@ export default function ResetPasswordForm() {
         <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-500/10 mb-4 border border-green-500/20">
           <CheckCircle className="h-10 w-10 text-green-500" />
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">¡Todo listo!</h3>
+        <h3 className="text-xl font-bold text-foreground mb-2">¡Todo listo!</h3>
         <p className="text-white/60 mb-6 text-sm">
           Tu contraseña ha sido actualizada. <br />
           Redirigiendo al inicio de sesión...
@@ -109,19 +109,19 @@ export default function ResetPasswordForm() {
             <Lock className="h-5 w-5 text-white/40" />
           </div>
           <input
-            type={showPassword ? "text" : "password"} 
+            type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          
+
           {/* Botón Ojo */}
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-primary hover:text-orange-600 transition-colors"
           >
             {showPassword ? (
               <EyeOff className="h-5 w-5" />
@@ -142,9 +142,9 @@ export default function ResetPasswordForm() {
             <Lock className="h-5 w-5 text-white/40" />
           </div>
           <input
-            type={showConfirm ? "text" : "password"} 
+            type={showConfirm ? "text" : "password"}
             placeholder="••••••••"
-            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required
@@ -154,7 +154,7 @@ export default function ResetPasswordForm() {
           <button
             type="button"
             onClick={() => setShowConfirm(!showConfirm)}
-            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-primary hover:text-orange-600 transition-colors"
           >
             {showConfirm ? (
               <EyeOff className="h-5 w-5" />
@@ -179,7 +179,7 @@ export default function ResetPasswordForm() {
       <button
         type="submit"
         disabled={loading}
-        className={`w-full flex items-center justify-center gap-2 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg ${
+        className={`w-full flex items-center justify-center gap-2 text-foreground font-bold py-3 px-4 rounded-lg transition-all shadow-lg ${
           loading
             ? "bg-primary/50 cursor-not-allowed opacity-70"
             : "bg-primary hover:bg-orange-600 shadow-orange-900/20 hover:shadow-orange-900/40 transform hover:-translate-y-0.5 cursor-pointer"

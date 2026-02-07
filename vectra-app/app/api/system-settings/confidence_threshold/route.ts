@@ -3,6 +3,7 @@ import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
+// Obtenemos el umbral de confianza actual
 export async function GET() {
   try {
     const result =
@@ -18,11 +19,12 @@ export async function GET() {
   }
 }
 
+// Actualizamos el umbral de confianza
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { value } = body;
-
+    // Validamos que el valor sea un número entre 0 y 1
     if (typeof value !== "number" || value < 0 || value > 1) {
       return NextResponse.json(
         { error: "El valor debe estar entre 0 y 1" },

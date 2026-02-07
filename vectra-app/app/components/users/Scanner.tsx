@@ -106,24 +106,28 @@ export default function Scanner({
 
   const isMirrored = mode === "live" && facingMode === "user"; // Espejado solo en modo "live" y cámara frontal
 
+  // Inicializar el analizador de ejercicio
   useEffect(() => {
     analyzerRef.current = new BicepCurlAnalyzer();
   }, []);
 
+  // Enviar feedback al padre cuando cambie
   useEffect(() => {
     if (onFeedbackChange) {
       onFeedbackChange(feedback);
     }
   }, [feedback, onFeedbackChange]);
 
+  // Enviar repeticiones al padre cuando cambie
   useEffect(() => {
     if (onRepetitionChange) {
       onRepetitionChange(repeticiones);
     }
   }, [repeticiones, onRepetitionChange]);
 
-  // --- LOGICA DEL REPRODUCTOR CUSTOM ---
+  // LÓGICA DEL REPRODUCTOR PERSONALIZADO
 
+  // Escuchar el teclado para salir de fullscreen
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && isFullscreen) {
@@ -139,10 +143,12 @@ export default function Scanner({
     };
   }, [isFullscreen]);
 
+  // Alternar fullscreen
   const toggleFullscreen = () => {
     setIsFullscreen((prev) => !prev);
   };
 
+  // Alternar reproducción
   const togglePlayPause = () => {
     if (fileVideoRef.current) {
       if (isFilePlaying) {
@@ -154,6 +160,7 @@ export default function Scanner({
     }
   };
 
+  // Alternar mute
   const toggleMute = () => {
     if (fileVideoRef.current) {
       fileVideoRef.current.muted = !isMuted;
@@ -161,18 +168,21 @@ export default function Scanner({
     }
   };
 
+  // Actualizar tiempo actual durante la reproducción
   const handleTimeUpdate = () => {
     if (fileVideoRef.current) {
       setCurrentTime(fileVideoRef.current.currentTime);
     }
   };
 
+  // Actualizar duración del video al cargar metadata
   const handleLoadedMetadata = () => {
     if (fileVideoRef.current) {
       setDuration(fileVideoRef.current.duration);
     }
   };
 
+  // Actualizar el tiempo actual al cambiar el slider
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     if (fileVideoRef.current) {
@@ -181,6 +191,7 @@ export default function Scanner({
     }
   };
 
+  // Formatear el tiempo en minutos:segundos
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
     const minutes = Math.floor(time / 60);
@@ -188,7 +199,7 @@ export default function Scanner({
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  // 1. Cargar el modelo de IA
+  // Cargar el modelo de IA
   useEffect(() => {
     const createPoseLandmarker = async () => {
       // Limpiar el modelo anterior
@@ -232,15 +243,15 @@ export default function Scanner({
   useEffect(() => {
     prevLandmarksRef.current = null;
     lastVideoTimeRef.current = -1;
-    // IMPORTANTE: No reseteamos highestTimestamp ni offset aquí para mantener la continuidad y evitar crashes.
+    // No reseteamos highestTimestamp ni offset aquí para mantener la continuidad y evitar crashes.
   }, [videoSrc]);
 
-  // 2. Loop de Detección
+  // Loop de Detección
   useEffect(() => {
     const predict = () => {
-      const feedbackCargando = {
-        errorType: "Sistema",
-        message: "Cargando...",
+      const feedbackCargando: ExerciseFeedback = {
+        errorType: "SYSTEM",
+        message: "Cargando",
       };
 
       const setFeedbackCargando = () => {
@@ -462,18 +473,18 @@ export default function Scanner({
       ref={containerRef}
       // Al hacer click en el contenedor, mostramos/ocultamos controles
       onClick={() => setShowControls((prev) => !prev)}
-      className={`bg-black overflow-hidden shadow-2xl group transition-all duration-300
+      className={`bg-black overflow-hidden shadow-2xl group transition-all duration-300 border-none
       ${
         isFullscreen
-          ? "fixed inset-0 z-100 w-screen h-dvh rounded-none border-none"
-          : "relative w-full h-full rounded-xl border border-white/10"
+          ? "fixed inset-0 z-100 w-screen h-dvh rounded-none"
+          : "relative w-full h-full rounded-xl"
       }`}
       // Evita scroll accidental en móvil fullscreen
       style={{ touchAction: isFullscreen ? "none" : "auto" }}
     >
       {/* Loader */}
       {!isModelLoaded && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#2a2a2a] text-white">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#2a2a2a] text-foreground">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
           <p className="text-lg font-medium animate-pulse">
             Cargando Motores Neuronales...
@@ -481,11 +492,11 @@ export default function Scanner({
         </div>
       )}
 
-      {/* --- MODO LIVE (WEBCAM) --- */}
+      {/* MODO LIVE */}
       {mode === "live" && (
         <>
           {isModelLoaded && cameraPermission === false && (
-            <div className="absolute inset-0 z-40 bg-black/90 text-white p-6 text-center flex flex-col items-center justify-center">
+            <div className="absolute inset-0 z-40 bg-black/90 text-foreground p-6 text-center flex flex-col items-center justify-center">
               <CameraOff className="w-16 h-16 text-red-500 mb-4" />
               <p className="mb-4">Acceso denegado</p>
               <button
@@ -512,11 +523,12 @@ export default function Scanner({
           />
           {webcamRunning && (
             <button
+              aria-label="Cambiar cámara"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleCamera();
               }}
-              className="cursor-pointer absolute top-4 left-4 z-60 p-3 bg-black/50 hover:bg-primary/80 text-white rounded-full border border-white/10 backdrop-blur-md"
+              className="cursor-pointer absolute top-4 left-4 z-60 p-3 bg-black/50 hover:bg-primary/80 text-foreground rounded-full border border-white/10 backdrop-blur-md"
             >
               <SwitchCamera className="w-5 h-5" />
             </button>
@@ -524,7 +536,7 @@ export default function Scanner({
         </>
       )}
 
-      {/* --- MODO FILE (VIDEO) --- */}
+      {/* MODO FILE */}
       {mode === "file" && (
         <>
           {!videoSrc ? (
@@ -556,8 +568,8 @@ export default function Scanner({
                 className={`absolute bottom-0 left-0 right-0 z-60 bg-linear-to-t from-black/90 via-black/60 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
               >
                 <div className="flex flex-col gap-2 max-w-4xl mx-auto w-full">
-                  {/* 1. BARRA DE ADELANTAMIENTO (Seek Bar) */}
-                  <div className="flex items-center gap-3 text-white text-xs font-mono font-medium">
+                  {/* 1. BARRA DE ADELANTAMIENTO  */}
+                  <div className="flex items-center gap-3 text-foreground text-xs font-mono font-medium">
                     <span className="min-w-10 text-right">
                       {formatTime(currentTime)}
                     </span>
@@ -578,7 +590,7 @@ export default function Scanner({
                       {/* Play/Pause */}
                       <button
                         onClick={togglePlayPause}
-                        className="cursor-pointer text-white hover:text-primary transition-transform active:scale-90"
+                        className="cursor-pointer text-foreground hover:text-primary transition-transform active:scale-90"
                       >
                         {isFilePlaying ? (
                           <Pause className="w-7 h-7 fill-current" />
@@ -590,7 +602,7 @@ export default function Scanner({
                       {/* Botón de Sonido */}
                       <button
                         onClick={toggleMute}
-                        className="cursor-pointer text-white hover:text-primary transition-transform active:scale-90"
+                        className="cursor-pointer text-foreground hover:text-primary transition-transform active:scale-90"
                       >
                         {isMuted ? (
                           <VolumeX className="w-6 h-6 text-red-400" />
@@ -602,8 +614,9 @@ export default function Scanner({
 
                     {/* Botón Fullscreen */}
                     <button
+                      aria-label="Fullscreen"
                       onClick={toggleFullscreen}
-                      className="cursor-pointer text-white hover:text-primary transition-transform active:scale-90"
+                      className="cursor-pointer text-foreground hover:text-primary transition-transform active:scale-90"
                     >
                       {isFullscreen ? (
                         <Minimize className="w-6 h-6" />
@@ -619,14 +632,13 @@ export default function Scanner({
         </>
       )}
 
-      {/* --- CANVAS (Líneas MediaPipe) --- */}
-      {/* z-20: Encima del video, Debajo de los controles */}
+      {/* CANVAS */}
       <canvas
         ref={canvasRef}
         className={`absolute inset-0 w-full h-full pointer-events-none z-20 ${mode === "file" ? "object-contain" : "object-cover"} ${isMirrored ? "transform -scale-x-100" : ""}`}
       />
 
-      {/* --- BADGES SUPERIORES --- */}
+      {/* BADGES SUPERIORES */}
       <div className="absolute top-4 right-4 z-50 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1 bg-black/50 rounded-full border border-white/10 backdrop-blur-md">
           {mode === "live" ? (
@@ -647,14 +659,14 @@ export default function Scanner({
         </div>
       </div>
 
-      {/* Botón fullscreen para Live (Solo aparece en Webcam) */}
+      {/* Botón fullscreen para Live */}
       {mode === "live" && webcamRunning && (
         <div className="absolute top-4 right-4 z-60 mt-10">
           {" "}
-          {/* Ajustado para no tapar el badge */}
           <button
+            aria-label="Fullscreen"
             onClick={toggleFullscreen}
-            className="hover:bg-primary/80 cursor-pointer p-2 bg-black/50 text-white rounded-full border border-white/10 backdrop-blur-md"
+            className="hover:bg-primary/80 cursor-pointer p-2 bg-black/50 text-foreground rounded-full border border-white/10 backdrop-blur-md"
           >
             {isFullscreen ? (
               <Minimize className="w-5 h-5" />

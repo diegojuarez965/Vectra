@@ -20,12 +20,7 @@ interface FileScannerProps {
   smoothingFactor: number;
 }
 
-const POSITIVE_MESSAGES = [
-  "Excelente técnica sigue así.",
-  "Muy bien mantén el ritmo.",
-  "Perfecto esa es la postura.",
-  "Bien hecho continúa.",
-];
+const POSITIVE_MESSAGES = ["Excelente", "Muy bien", "Perfecto", "Bien hecho"];
 
 export default function FileScanner({
   confidenceThreshold,
@@ -39,10 +34,11 @@ export default function FileScanner({
   // Estado para el feedback
   const [currentFeedback, setCurrentFeedback] =
     useState<ExerciseFeedback | null>({
-      errorType: "Sistema",
-      message: "Cargando...",
+      errorType: "SYSTEM",
+      message: "Cargando",
     });
 
+  // Estado para las repeticiones
   const [repeticiones, setRepeticiones] = useState(0);
 
   // Estado para Mute
@@ -103,6 +99,8 @@ export default function FileScanner({
   }, [isMuted, cancel]);
 
   // HANDLERS
+
+  // Función para manejar la selección de archivo
   const handleFileSelection = (file: File) => {
     if (file && file.type.startsWith("video/")) {
       if (videoSrc) URL.revokeObjectURL(videoSrc);
@@ -114,11 +112,13 @@ export default function FileScanner({
     }
   };
 
+  // Handler para el cambio de archivo
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFileSelection(file);
   };
 
+  // Handlers para Drag and Drop
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -211,7 +211,7 @@ export default function FileScanner({
                   <h2 className="text-base md:text-lg font-bold text-foreground leading-none truncate max-w-37.5 md:max-w-md">
                     {fileName}
                   </h2>
-                  <p className="text-[10px] md:text-xs text-foreground/50 mt-1 uppercase tracking-wider font-semibold">
+                  <p className="text-[10px] md:text-xs text-foreground mt-1 uppercase tracking-wider font-semibold">
                     Análisis Biomecánico
                   </p>
                 </div>
@@ -223,6 +223,7 @@ export default function FileScanner({
                   onClick={() => setIsMuted(!isMuted)}
                   className="cursor-pointer p-2 rounded-full hover:bg-foreground/10 text-foreground/60 hover:text-foreground transition-colors"
                   title={isMuted ? "Activar Voz" : "Silenciar Voz"}
+                  aria-label={isMuted ? "Activar Voz" : "Silenciar Voz"}
                 >
                   {isMuted ? (
                     <VolumeX className="w-5 h-5" />
@@ -242,7 +243,7 @@ export default function FileScanner({
             </div>
 
             {/* Contenedor Scanner */}
-            <div className="relative w-full rounded-xl md:rounded-3xl overflow-hidden border border-foreground/10 bg-black shadow-2xl aspect-3/4 md:aspect-video">
+            <div className="relative w-full rounded-xl md:rounded-3xl overflow-hidden border border-none bg-background shadow-2xl aspect-3/4 md:aspect-video">
               <Scanner
                 mode="file"
                 videoSrc={videoSrc}
@@ -291,7 +292,7 @@ export default function FileScanner({
                       Buena Forma
                     </h3>
                     <p className="text-xs md:text-sm text-foreground/50">
-                      Todo parece ir bien.
+                      Todo parece ir bien
                     </p>
                   </div>
                 )}

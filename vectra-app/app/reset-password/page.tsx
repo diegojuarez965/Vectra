@@ -5,7 +5,6 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Recuperar Contraseña",
-  description: "Restablece el acceso a tu cuenta de análisis biomecánico.",
 };
 
 export default function ResetPasswordRequestPage() {
@@ -26,7 +25,7 @@ export default function ResetPasswordRequestPage() {
             />
           </div>
         </Link>
-        <h2 className="text-3xl font-bold text-white tracking-tight">
+        <h2 className="text-3xl font-bold text-foreground tracking-tight">
           Recuperar contraseña
         </h2>
         <p className="mt-2 text-sm text-white/60">

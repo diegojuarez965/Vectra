@@ -3,6 +3,7 @@ import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
+// Obtenemos el valor actual del factor de suavizado
 export async function GET() {
   try {
     const result =
@@ -18,12 +19,17 @@ export async function GET() {
   }
 }
 
+// Actualizamos el factor de suavizado
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { value } = body;
 
-    if (typeof value !== "number" || (value !== 0.2 && value !== 0.5 && value !== 0.8)) {
+    // Validamos que el valor sea un número y que sea 0.2, 0.5 o 0.8
+    if (
+      typeof value !== "number" ||
+      (value !== 0.2 && value !== 0.5 && value !== 0.8)
+    ) {
       return NextResponse.json(
         { error: "El valor debe ser 0.2, 0.5 o 0.8" },
         { status: 400 },

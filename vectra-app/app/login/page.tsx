@@ -6,8 +6,6 @@ import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Iniciar Sesión",
-  description:
-    "Plataforma de análisis biomecánico y corrección postural con IA.",
 };
 
 export default function LoginPage() {
@@ -29,7 +27,7 @@ export default function LoginPage() {
           </div>
         </Link>
 
-        <h2 className="text-3xl font-bold text-white tracking-tight">
+        <h2 className="text-3xl font-bold text-foreground tracking-tight">
           ¡Bienvenido a Vectra!
         </h2>
         <p className="mt-2 text-sm text-white/60">Accede a tu perfil</p>

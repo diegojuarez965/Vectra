@@ -15,7 +15,7 @@ export default function Home() {
             width={40}
             height={40}
           />
-          <div className="hidden md:block text-2xl font-bold tracking-tighter text-white">
+          <div className="hidden md:block text-2xl font-bold tracking-tighter text-foreground">
             VECTRA
           </div>
         </div>
@@ -29,14 +29,14 @@ export default function Home() {
           </Link>
           <Link
             href="/register"
-            className="px-5 py-2 rounded-full bg-primary text-white hover:bg-orange-600 transition-colors text-sm font-semibold shadow-lg shadow-orange-900/20"
+            className="px-5 py-2 rounded-full bg-primary text-foreground hover:bg-orange-600 transition-colors text-sm font-semibold shadow-lg shadow-orange-900/20"
           >
             Registrarse
           </Link>
         </div>
       </nav>
 
-      {/* --- HERO SECTION --- */}
+      {/* --- Sección Hero --- */}
       <section className="flex-1 flex flex-col md:flex-row items-center justify-center px-6 md:px-12 max-w-7xl mx-auto gap-12 py-12 md:py-24">
         {/* Texto Hero */}
         <div className="flex-1 space-y-6 text-center md:text-left">
@@ -54,7 +54,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start pt-4">
             <Link
               href="/login"
-              className="px-6 py-4 rounded-lg bg-primary text-white font-bold text-lg hover:bg-orange-600 transition-all shadow-xl hover:shadow-orange-900/40 transform hover:-translate-y-1"
+              className="px-6 py-4 rounded-lg bg-primary text-foreground font-bold text-lg hover:bg-orange-600 transition-all shadow-xl hover:shadow-orange-900/40 transform hover:-translate-y-1"
             >
               Comenzar Análisis
             </Link>
@@ -66,12 +66,11 @@ export default function Home() {
             </Link>
           </div>
         </div>
-
-        {/* Elemento Visual (Placeholder para tu Demo o Logo 3D) */}
+        {/* Hero Scanner */}
         <HeroScanner />
       </section>
 
-      {/* --- FEATURES SECTION --- */}
+      {/* --- Sección de Características --- */}
       <section id="como-funciona" className="py-24 bg-black/10">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="text-center mb-16 space-y-4">
@@ -83,7 +82,7 @@ export default function Home() {
             <FeatureCard
               icon={<ScanIcon />}
               title="Detección en Tiempo Real"
-              description="Sin sensores corporales. Solo necesitas tu cámara web para obtener un mapeo esquelético preciso al instante."
+              description="Sin sensores corporales. Solo necesitas tu cámara para obtener un mapeo esquelético preciso al instante."
             />
             {/* Card 2 */}
             <FeatureCard
@@ -104,7 +103,7 @@ export default function Home() {
   );
 }
 
-// Iconos SVG simples inline
+// Íconos
 const ScanIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

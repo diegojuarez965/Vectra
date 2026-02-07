@@ -8,9 +8,9 @@ export default function HeroScanner() {
     <div className="relative w-full max-w-sm mx-auto">
       {/* Tarjeta contenedora */}
       <div className="relative z-10 p-5 rounded-2xl bg-[#2a2a2a]/80 border border-white/10 backdrop-blur-md shadow-2xl">
-        {/* --- VENTANA DE ESCANEO --- */}
+        {/* VENTANA DE ESCANEO */}
         <div className="aspect-3/4 rounded-lg bg-black/50 border border-white/5 relative overflow-hidden group">
-          {/* 1. Fondo Cuadriculado (Grid) */}
+          {/* 1. Fondo Cuadriculado */}
           <div
             className="absolute inset-0 opacity-20"
             style={{
@@ -30,7 +30,7 @@ export default function HeroScanner() {
             />
           </div>
 
-          {/* 3. Barra Láser de Escaneo (Animación CSS pura) */}
+          {/* 3. Barra Láser de Escaneo */}
           <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
             <div className="w-full h-[0.5] bg-primary shadow-[0_0_15px_rgba(255,87,34,0.8)] absolute top-0 animate-[scan_3s_ease-in-out_infinite]" />
             {/* Degradado que sigue a la barra */}
@@ -46,7 +46,7 @@ export default function HeroScanner() {
           </div>
         </div>
 
-        {/* --- COMPONENTE DE BARRA (Reutilizado) --- */}
+        {/* COMPONENTE DE BARRA DINÁMICA DE POSTURA */}
         <DynamicPostureBar />
       </div>
 

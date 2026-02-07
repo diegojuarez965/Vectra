@@ -3,6 +3,7 @@ import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
+// Obtenemos el modo sin registro actual
 export async function GET() {
   try {
     const result =
@@ -18,11 +19,13 @@ export async function GET() {
   }
 }
 
+// Actualizamos el modo sin registro
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { value } = body;
 
+    // Validamos que el valor sea un booleano
     if (typeof value !== "boolean") {
       return NextResponse.json(
         { error: "El valor debe ser booleano" },

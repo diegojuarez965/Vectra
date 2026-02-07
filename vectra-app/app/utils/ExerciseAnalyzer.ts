@@ -1,5 +1,21 @@
 import { NormalizedLandmark } from "@mediapipe/tasks-vision";
 
+// Fase del ejercicio
+type Phase = "CONCENTRIC" | "ECCENTRIC" | "NEUTRAL";
+
+export interface ExerciseFeedback {
+  errorType: "TECHNICAL" | "POSITIONING" | "SYSTEM";
+  exercise?: "BICEP_CURL";
+  error?:
+    | "ELBOW_BACK"
+    | "ELBOW_FRONT"
+    | "FORWARD_BACK"
+    | "FORWARD_FRONT"
+    | "NO_ROM_ECCENTRIC"
+    | "NO_ROM_CONCENTRIC";
+  message: string;
+}
+
 const LANDMARKS = {
   NOSE: 0,
   LEFT_SHOULDER: 11,
@@ -12,19 +28,15 @@ const LANDMARKS = {
   RIGHT_HIP: 24,
 };
 
-type Phase = "CONCENTRIC" | "ECCENTRIC" | "NEUTRAL";
-
+// Visibilidad mínima para considerar una articulación como "confiable" en el análisis
 const VISIBILITY_THRESHOLD = 0.65;
 
+// Función para verificar la visibilidad de una articulación
 const isReliable = (landmark: NormalizedLandmark | undefined): boolean => {
   return landmark !== undefined && landmark.visibility > VISIBILITY_THRESHOLD;
 };
 
-export interface ExerciseFeedback {
-  errorType: string;
-  message: string;
-}
-
+// Función para calcular el ángulo entre tres puntos (en grados) con vértice en B
 const calculateAngle = (
   a: NormalizedLandmark,
   b: NormalizedLandmark,
@@ -59,20 +71,19 @@ const calculateAngle = (
 
 export class BicepCurlAnalyzer {
   private prevAngle: number = 0; // Ángulo del frame anterior
-  private currentPhase: Phase = "NEUTRAL"; // ¿Qué está haciendo ahora?
+  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
   private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
   private excentricSuccess = false; // La fase excéntrica se completó correctamente
   private concentricSuccess = false; // La fase concéntrica se completó correctamente
   public repetitionCounter = 0; // Contador de repeticiones
-
   private minAngleReached: number = 180; // Máxima flexión (arriba)
   private maxAngleReached: number = 0; // Máxima extensión (abajo)
-
   private readonly ROM_EXTENSION_TARGET = 150; // El brazo debe bajar hasta al menos 150°
   private readonly ROM_FLEXION_TARGET = 70; // El brazo debe subir hasta menos de 70°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
+  // Método para analizar la posición del codo y detectar si se está llevando hacia adelante o hacia atrás
   private checkPosicionCodo = (
     hip: NormalizedLandmark,
     shoulder: NormalizedLandmark,
@@ -81,9 +92,11 @@ export class BicepCurlAnalyzer {
     width: number,
     height: number,
   ): ExerciseFeedback | null => {
+    // Calcular el ángulo de separación entre la cadera y el codo respecto al hombro
     const separationAngle = calculateAngle(hip, shoulder, elbow, width, height);
     const DRIFT_THRESHOLD = 20;
 
+    // Si el ángulo de separación es mayor a 20 grados, consideramos que el codo se está moviendo fuera del plano ideal
     if (separationAngle > DRIFT_THRESHOLD) {
       const shoulderX = shoulder.x * width;
       const elbowX = elbow.x * width;
@@ -91,20 +104,24 @@ export class BicepCurlAnalyzer {
       let isForward = false;
 
       if (isFacingLeft) {
-        isForward = elbowX < shoulderX;
+        isForward = elbowX < shoulderX; // Si el usuario mira a la izquierda, el codo adelante es cuando su coordenada X es menor que la del hombro
       } else {
-        isForward = elbowX > shoulderX;
+        isForward = elbowX > shoulderX; // Si el usuario mira a la derecha, el codo adelante es cuando su coordenada X es mayor que la del hombro
       }
 
       if (isForward) {
         return {
-          errorType: "Técnica",
-          message: "No lleves el codo hacia adelante.",
+          errorType: "TECHNICAL",
+          exercise: "BICEP_CURL",
+          error: "ELBOW_FRONT",
+          message: "No lleves el codo hacia adelante",
         };
       } else {
         return {
-          errorType: "Técnica",
-          message: "No lleves el codo hacia atrás.",
+          errorType: "TECHNICAL",
+          exercise: "BICEP_CURL",
+          error: "ELBOW_BACK",
+          message: "No lleves el codo hacia atrás",
         };
       }
     }
@@ -112,6 +129,7 @@ export class BicepCurlAnalyzer {
     return null;
   };
 
+  // Método para analizar el balanceo del cuerpo y detectar si se está balanceando hacia adelante o hacia atrás
   private checkBalanceo = (
     hip: NormalizedLandmark,
     shoulder: NormalizedLandmark,
@@ -126,6 +144,7 @@ export class BicepCurlAnalyzer {
       visibility: 1.0,
     };
 
+    // Calcular el ángulo de separación entre la vertical y la cadera respecto al hombro
     const separationAngle = calculateAngle(
       vertical,
       shoulder,
@@ -135,6 +154,7 @@ export class BicepCurlAnalyzer {
     );
     const DRIFT_THRESHOLD = 170.0;
 
+    // Si el ángulo de separación es mayor a 170 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
     if (separationAngle < DRIFT_THRESHOLD) {
       const shoulderX = shoulder.x * width;
       const hipX = hip.x * width;
@@ -142,20 +162,24 @@ export class BicepCurlAnalyzer {
       let backBalanced = false;
 
       if (isFacingLeft) {
-        backBalanced = hipX < shoulderX;
+        backBalanced = hipX < shoulderX; // Si el usuario mira a la izquierda, el balanceo hacia atrás es cuando la coordenada X de la cadera es menor que la del hombro
       } else {
-        backBalanced = hipX > shoulderX;
+        backBalanced = hipX > shoulderX; // Si el usuario mira a la derecha, el balanceo hacia atrás es cuando la coordenada X de la cadera es mayor que la del hombro
       }
 
       if (backBalanced) {
         return {
-          errorType: "Técnica",
-          message: "No te balancees hacia atrás.",
+          errorType: "TECHNICAL",
+          exercise: "BICEP_CURL",
+          error: "FORWARD_BACK",
+          message: "No te balancees hacia atrás",
         };
       } else {
         return {
-          errorType: "Técnica",
-          message: "No te balancees hacia adelante.",
+          errorType: "TECHNICAL",
+          exercise: "BICEP_CURL",
+          error: "FORWARD_FRONT",
+          message: "No te balancees hacia adelante",
         };
       }
     }
@@ -163,6 +187,7 @@ export class BicepCurlAnalyzer {
     return null;
   };
 
+  // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
     shoulder: NormalizedLandmark,
     elbow: NormalizedLandmark,
@@ -170,37 +195,41 @@ export class BicepCurlAnalyzer {
     width: number,
     height: number,
   ): ExerciseFeedback | null {
-    // 0. Obtener el ángulo actual
+    // Calculamos el ángulo entre el hombro y la muñeca con vértice en el codo para determinar la flexión del brazo
     const currentAngle = calculateAngle(shoulder, elbow, wrist, width, height);
 
     let feedback: ExerciseFeedback | null = null;
 
-    // --- MODO BLOQUEO: GESTIÓN DE ERRORES ACTIVOS ---
+    // Modo bloqueo: gestión de errores activos
     if (this.currentErrorFase !== null) {
       if (this.currentErrorFase === "CONCENTRIC") {
-        // ERROR: No subió suficiente.
-        // SALIDA (ÉXITO): El usuario corrigió y subió más (< 70).
+        // Error: No subió suficiente.
+        // Salida: El usuario corrigió y subió más (< 70).
         if (currentAngle <= this.ROM_FLEXION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.concentricSuccess = true;
         } else {
-          // MANTENER ERROR
+          // Mantener error
           feedback = {
-            errorType: "rom_incompleto_arriba",
-            message: "Sube más la pesa. Contrae el bíceps completo.",
+            errorType: "TECHNICAL",
+            exercise: "BICEP_CURL",
+            error: "NO_ROM_CONCENTRIC",
+            message: "Sube más la pesa",
           };
         }
       } else if (this.currentErrorFase === "ECCENTRIC") {
-        // ERROR: No bajó suficiente.
-        // SALIDA (ÉXITO): El usuario corrigió y bajó más (> 150).
+        // Error: No bajó suficiente.
+        // Salida: El usuario corrigió y bajó más (> 150).
         if (currentAngle >= this.ROM_EXTENSION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.excentricSuccess = true;
         } else {
-          // MANTENER ERROR
+          // Mantener error
           feedback = {
-            errorType: "rom_incompleto_abajo",
-            message: "Estira el brazo completo al bajar.",
+            errorType: "TECHNICAL",
+            exercise: "BICEP_CURL",
+            error: "NO_ROM_ECCENTRIC",
+            message: "Baja más la pesa",
           };
         }
       }
@@ -210,62 +239,66 @@ export class BicepCurlAnalyzer {
       return feedback;
     }
 
-    // --- MODO NORMAL: DETECCIÓN DE FASES ---
+    // Modo normal: detección de fases
 
-    // CASO A: Transición a BAJADA (Fase Excéntrica detectada)
+    // CASO A: Fase Excéntrica detectada
     if (currentAngle > this.prevAngle + this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase concéntrica, validamos la amplitud y posibles errores antes de cambiar a excéntrica
       if (this.currentPhase === "CONCENTRIC") {
-        // ... (Tu lógica de amplitud se mantiene igual) ...
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
         const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
-
         if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
-          // VALIDAR LA SUBIDA ANTERIOR
+          // Validamos la subida anterior
           if (this.minAngleReached > this.ROM_FLEXION_TARGET) {
             feedback = {
-              errorType: "rom_incompleto_arriba",
-              message: "Sube más la pesa. Contrae el bíceps completo.",
+              errorType: "TECHNICAL",
+              exercise: "BICEP_CURL",
+              error: "NO_ROM_CONCENTRIC",
+              message: "Sube más la pesa",
             };
-            // ACTIVAMOS EL BLOQUEO
+            // Activamos el bloqueo
             this.currentErrorFase = "CONCENTRIC";
           } else {
-            // ÉXITO EN LA SUBIDA
+            // Éxito en la subida
             this.concentricSuccess = true;
           }
         }
-        this.maxAngleReached = currentAngle;
+        this.maxAngleReached = currentAngle; // Actualizamos referencia
       }
 
-      this.currentPhase = "ECCENTRIC";
-      this.maxAngleReached = Math.max(this.maxAngleReached, currentAngle);
-      this.prevAngle = currentAngle; // Actualizamos referencia solo al movernos
+      this.currentPhase = "ECCENTRIC"; // Actualizamos fase
+      this.maxAngleReached = Math.max(this.maxAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
     }
 
-    // CASO B: Transición a SUBIDA (Fase Concéntrica detectada)
+    // CASO B: Fase Concéntrica detectada
     else if (currentAngle < this.prevAngle - this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase excéntrica, validamos la amplitud y posibles errores antes de cambiar a concéntrica
       if (this.currentPhase === "ECCENTRIC") {
-        // ... (Tu lógica de amplitud se mantiene igual) ...
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
         const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
-
         if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
-          // VALIDAR LA BAJADA ANTERIOR
+          // Validamos la bajada anterior
           if (this.maxAngleReached < this.ROM_EXTENSION_TARGET) {
             feedback = {
-              errorType: "rom_incompleto_abajo",
-              message: "Estira el brazo completo al bajar.",
+              errorType: "TECHNICAL",
+              exercise: "BICEP_CURL",
+              error: "NO_ROM_ECCENTRIC",
+              message: "Baja más la pesa",
             };
-            // ACTIVAMOS EL BLOQUEO
+            // Activamos el bloqueo
             this.currentErrorFase = "ECCENTRIC";
           } else {
-            // ÉXITO EN LA BAJADA
+            // Éxito en la bajada
             this.excentricSuccess = true;
           }
         }
-        this.minAngleReached = currentAngle;
+        this.minAngleReached = currentAngle; // Actualizamos referencia
       }
 
-      this.currentPhase = "CONCENTRIC";
-      this.minAngleReached = Math.min(this.minAngleReached, currentAngle);
-      this.prevAngle = currentAngle; // Actualizamos referencia solo al movernos
+      this.currentPhase = "CONCENTRIC"; // Actualizamos fase
+      this.minAngleReached = Math.min(this.minAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
     }
 
     return feedback;
@@ -280,20 +313,22 @@ export class BicepCurlAnalyzer {
     const leftShoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
     const rightShoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
 
+    // Verificamos que las articulaciones clave para determinar la orientación del usuario sean confiables
     if (
       !isReliable(nose) ||
       !isReliable(leftShoulder) ||
       !isReliable(rightShoulder)
     ) {
       return {
-        errorType: "Posicionamiento",
-        message: "Por favor ponte en frente de la cámara.",
+        errorType: "POSITIONING",
+        message: "Ponte en frente de la cámara",
       };
     }
 
     const noseX = nose.x * width;
     const midShoulderX = ((leftShoulder.x + rightShoulder.x) / 2) * width;
 
+    // Determinamos la orientación del usuario (mirando a la izquierda o a la derecha) para analizar el brazo correcto y dar feedback adecuado
     const isFacingLeft = noseX < midShoulderX;
 
     let hip, shoulder, elbow, wrist;
@@ -310,6 +345,8 @@ export class BicepCurlAnalyzer {
       wrist = landmarks[LANDMARKS.RIGHT_WRIST];
     }
 
+    /* Verificamos que las articulaciones clave para el ejercicio sean confiables antes de realizar cualquier 
+    análisis para evitar dar feedback erróneo por una mala detección */
     if (
       !isReliable(hip) ||
       !isReliable(shoulder) ||
@@ -317,10 +354,15 @@ export class BicepCurlAnalyzer {
       !isReliable(wrist)
     ) {
       return {
-        errorType: "Posicionamiento",
-        message: "Por favor ponte de perfil.",
+        errorType: "POSITIONING",
+        message: "Ponte de perfil",
       };
     }
+
+    /* Realizamos la comprobación del codo, balanceo y ROM en orden de prioridad para dar el 
+     feedback más relevante al usuario. Si se detecta un error de posición del codo, no se 
+     analiza el balanceo ni el ROM para evitar dar múltiples feedbacks al mismo tiempo y abrumar al usuario.
+    Lo mismo ocurre con el balanceo, si se detecta un error de balanceo, no se analiza el ROM. */
     const posicionCodo = this.checkPosicionCodo(
       hip,
       shoulder,
@@ -346,6 +388,7 @@ export class BicepCurlAnalyzer {
     if (rom != null) {
       return rom;
     }
+    // Si no hay errores activos y se completaron correctamente ambas fases, contamos una repetición
     if (this.concentricSuccess && this.excentricSuccess) {
       this.repetitionCounter += 1;
       this.concentricSuccess = false;

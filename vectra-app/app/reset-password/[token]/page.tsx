@@ -5,7 +5,6 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Nueva Contraseña",
-  description: "Establece una nueva contraseña segura para tu cuenta.",
 };
 
 export default function ResetPasswordPage() {

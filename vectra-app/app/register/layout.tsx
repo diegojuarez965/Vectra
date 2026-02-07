@@ -4,7 +4,6 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Registro",
-  description: "Crea tu cuenta para comenzar el análisis biomecánico con IA.",
 };
 
 export default async function RegisterLayout({
@@ -12,11 +11,14 @@ export default async function RegisterLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Verificamos si el modo de no registro está activado
   const not_allowed = await getNoRegisterMode();
 
   if (not_allowed) {
     return <NoRegisterPage />;
   }
 
-  return <div className="min-h-screen bg-black text-white">{children}</div>;
+  return (
+    <div className="min-h-screen bg-background text-foreground">{children}</div>
+  );
 }

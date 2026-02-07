@@ -39,7 +39,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
             name="email"
             type="email"
             placeholder="usuario@ejemplo.com"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             required
           />
         </div>
@@ -67,7 +67,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
             name="password"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             required
           />
 
@@ -75,7 +75,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-white/40 hover:text-white transition-colors"
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-primary hover:text-orange-600 transition-colors"
             aria-label={
               showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
             }
@@ -107,7 +107,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
         type="submit"
         disabled={isPending}
         aria-disabled={isPending}
-        className={`w-full flex items-center justify-center gap-2 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg ${
+        className={`w-full flex items-center justify-center gap-2 text-foreground font-bold py-3 px-4 rounded-lg transition-all shadow-lg ${
           isPending
             ? "bg-primary/50 cursor-not-allowed opacity-70"
             : "bg-primary cursor-pointer hover:bg-orange-600 shadow-orange-900/20 hover:shadow-orange-900/40 transform hover:-translate-y-0.5"

@@ -45,7 +45,7 @@ export default function NavLinks() {
               "relative flex h-12 grow items-center justify-center gap-3 rounded-xl p-3 text-sm font-medium transition-all duration-300 md:flex-none md:justify-start md:px-4 border",
               {
                 "bg-primary/10 text-primary border-primary/20 shadow-[0_0_15px_rgba(255,87,34,0.15)]": isActive,
-                "bg-transparent text-white/50 border-transparent hover:bg-white/5 hover:text-white hover:border-white/10": !isActive,
+                "bg-transparent text-white/50 border-transparent hover:bg-white/5 hover:text-primary hover:border-white/10": !isActive,
               }
             )}
           >

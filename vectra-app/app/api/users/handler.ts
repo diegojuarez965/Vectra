@@ -13,7 +13,7 @@ export async function handlerCreateUser(req: Request) {
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -24,7 +24,7 @@ export async function handlerCreateUser(req: Request) {
     if (existingUsers.length > 0) {
       return NextResponse.json(
         { error: "Email ya registrado" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -42,7 +42,7 @@ export async function handlerCreateUser(req: Request) {
     console.error("Database Error:", error);
     return NextResponse.json(
       { error: "Failed to create user." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

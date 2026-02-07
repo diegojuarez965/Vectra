@@ -9,7 +9,7 @@ export default function MaintenancePage() {
   const [showLogin, setShowLogin] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4 text-center text-white">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center text-foreground">
       <div
         className={`transition-all duration-500 ${showLogin ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}`}
       >
@@ -39,7 +39,7 @@ export default function MaintenancePage() {
         className={`transition-all duration-500 w-full max-w-sm ${showLogin ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 h-0 overflow-hidden pointer-events-none"}`}
       >
         <div className="bg-white/5 border border-white/10 p-8 rounded-2xl">
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
             <LogIn className="w-5 h-5 text-primary" /> Login Admin
           </h2>
           <Suspense

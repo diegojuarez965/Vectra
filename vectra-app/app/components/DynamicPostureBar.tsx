@@ -25,15 +25,13 @@ export default function DynamicPostureBar() {
     <div className="mt-4 space-y-2">
       <div className="flex justify-between text-sm">
         <span className="text-white/60">Alineación Cervical</span>
-        <span className="text-primary font-bold tabular-nums">
-          {score}%
-        </span>
+        <span className="text-primary font-bold tabular-nums">{score}%</span>
       </div>
-      
+
       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-        <div 
+        <div
           className="h-full bg-primary rounded-full transition-all duration-1000 ease-in-out"
-          style={{ width: `${score}%` }} 
+          style={{ width: `${score}%` }}
         />
       </div>
     </div>

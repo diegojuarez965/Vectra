@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "./components/Footer";
 
-// --- IMPORTS NUEVOS PARA MANTENIMIENTO ---
 import { getMaintenanceMode } from "@/app/lib/actions";
 import { auth } from "@/auth";
 import MaintenancePage from "@/app/mantenimiento/page";
@@ -30,40 +29,33 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
+  // Mostrar pantalla de mantenimiento si está en modo mantenimiento y el usuario no es admin
   const isMaintenance = await getMaintenanceMode();
   let showMaintenanceScreen = false;
-
   if (isMaintenance) {
     const session = await auth();
-    const isAdmin = session?.user?.rol === "admin"; 
-    
+    const isAdmin = session?.user?.rol === "admin";
     if (!isAdmin) {
       showMaintenanceScreen = true;
     }
   }
-
   if (showMaintenanceScreen) {
     return (
       <html lang="es">
-        <body className={`${geistSans.variable} ${geistMono.variable} bg-black text-white antialiased`}>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground antialiased`}
+        >
           <MaintenancePage />
         </body>
       </html>
     );
   }
-
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-background text-white antialiased flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground antialiased flex flex-col min-h-screen`}
       >
-        {/* El children normal de la app */}
-        <main className="grow">
-            {children}
-        </main>
-        
-        {/* El footer solo aparece si la app funciona normal */}
+        <main className="grow">{children}</main>
         <Footer />
       </body>
     </html>

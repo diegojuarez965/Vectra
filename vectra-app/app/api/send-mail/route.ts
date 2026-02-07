@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   if (!user.length) {
     return NextResponse.json(
       { error: "Usuario no encontrado" },
-      { status: 404 }
+      { status: 404 },
     );
   }
   // Generamos un token de recuperación
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       VALUES (${email}, ${token}, ${expiresAt})
     `;
 
+  // Creamos el enlace de recuperación y enviamos el correo
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -42,8 +43,8 @@ export async function POST(req: Request) {
     from: process.env.EMAIL_USER,
     to: email,
     subject: "Recuperación de contraseña",
-    text: `Hacé clic en el siguiente enlace para restablecer tu contraseña: ${resetLink}`,
-    html: `<p>Hacé clic en el siguiente enlace para restablecer tu contraseña:</p><a href="${resetLink}">${resetLink}</a>`,
+    text: `Haz clic en el siguiente enlace para restablecer tu contraseña. El enlace vencerá en 1 hora: ${resetLink}`,
+    html: `<p>Haz clic en el siguiente enlace para restablecer tu contraseña. El enlace vencerá en 1 hora:</p><a href="${resetLink}">${resetLink}</a>`,
   };
 
   try {
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     console.error("Error al enviar correo:", error);
     return NextResponse.json(
       { error: "Error al enviar correo" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

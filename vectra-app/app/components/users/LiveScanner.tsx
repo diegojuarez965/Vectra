@@ -18,23 +18,20 @@ interface LiveScannerProps {
   smoothingFactor: number;
 }
 
-const POSITIVE_MESSAGES = [
-  "Excelente técnica sigue así.",
-  "Muy bien mantén el ritmo.",
-  "Perfecto esa es la postura.",
-  "Bien hecho continúa.",
-];
+const POSITIVE_MESSAGES = ["Excelente", "Muy bien", "Perfecto", "Bien hecho"];
 
 export default function LiveScanner({
   confidenceThreshold,
   smoothingFactor,
 }: LiveScannerProps) {
+  // Estado para el feedback
   const [currentFeedback, setCurrentFeedback] =
     useState<ExerciseFeedback | null>({
-      errorType: "Sistema",
-      message: "Cargando...",
+      errorType: "SYSTEM",
+      message: "Cargando",
     });
 
+  // Estado para las repeticiones
   const [repeticiones, setRepeticiones] = useState(0);
 
   // Estado para el Mute
@@ -95,7 +92,7 @@ export default function LiveScanner({
                 <h2 className="text-base md:text-lg font-bold text-foreground leading-none">
                   Cámara en Vivo
                 </h2>
-                <p className="text-[10px] md:text-xs text-foreground/50 mt-1 uppercase tracking-wider font-semibold">
+                <p className="text-[10px] md:text-xs text-foreground mt-1 uppercase tracking-wider font-semibold">
                   Detección Activa
                 </p>
               </div>
@@ -107,6 +104,7 @@ export default function LiveScanner({
                 onClick={() => setIsMuted(!isMuted)}
                 className="cursor-pointer p-2 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground transition-colors border border-foreground/5"
                 title={isMuted ? "Activar Voz" : "Silenciar Voz"}
+                aria-label={isMuted ? "Activar Voz" : "Silenciar Voz"}
               >
                 {isMuted ? (
                   <VolumeX className="w-5 h-5 md:w-6 md:h-6 text-foreground/50" />
@@ -128,7 +126,7 @@ export default function LiveScanner({
           </div>
 
           {/* Contenedor del Scanner */}
-          <div className="relative rounded-xl md:rounded-3xl overflow-hidden border border-foreground/10 bg-black shadow-2xl aspect-3/4 md:aspect-video">
+          <div className="relative rounded-xl md:rounded-3xl overflow-hidden border-none bg-background shadow-2xl aspect-3/4 md:aspect-video">
             <Scanner
               mode="live"
               confidence_threshold={confidenceThreshold}
@@ -176,7 +174,7 @@ export default function LiveScanner({
                     Buena Forma
                   </h3>
                   <p className="text-xs md:text-sm text-foreground/50">
-                    Todo parece ir bien.
+                    Todo parece ir bien
                   </p>
                 </div>
               )}
