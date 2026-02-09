@@ -1,8 +1,8 @@
 import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/actions";
-
 import LiveScanner from "@/app/components/users/LiveScanner";
-import { FileScan } from "lucide-react";
+import { FileScan, History, TrendingUp } from "lucide-react"; // Importamos iconos nuevos
 import { Metadata } from "next";
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
   title: "Analizar En Vivo",
@@ -11,32 +11,68 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function LiveScannerPage() {
-  const [confidence, smoothing] = await Promise.all([
+  const [confidence, smoothingFactor] = await Promise.all([
     getConfidenceThreshold(),
     getSmoothingFactor(),
   ]);
+
+  const session = await auth();
+  const userID = session?.user?.id || undefined;
 
   return (
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground">
       {/* HEADER */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10 shadow-lg shadow-primary/5">
             <FileScan className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Análisis en Vivo
-          </h1>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Análisis en Vivo
+            </h1>
+            <p className="text-sm text-muted-foreground hidden md:block">
+              Modo de Entrenamiento Oficial
+            </p>
+          </div>
         </div>
-        <p className="text-white/60 max-w-2xl">
-          Graba en vivo tu entrenamiento para analizarlo.
-        </p>
+
+        {/* EXPLICACIÓN DE VALOR Y GUARDADO */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full">
+          <p className="text-white/80 text-center mb-3 text-sm md:text-lg leading-relaxed">
+            Graba tu entrenamiento en tiempo real. En este modo,{" "}
+            <strong className="text-primary font-semibold">
+              puedes guardar tu progreso automaticamente.
+            </strong>
+          </p>
+
+          <div className="flex flex-col justify-center sm:flex-row gap-3">
+            {/* Badge 1: Historial */}
+            <div className="flex items-center justify-center text-center gap-2 text-sm md:text-lg text-white/60 bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+              <History className="w-4 h-4 text-primary" />
+              <span>
+                Se guardan tus <strong>repeticiones y errores</strong> en el
+                historial.
+              </span>
+            </div>
+
+            {/* Badge 2: Progreso */}
+            <div className="flex items-center justify-center text-center gap-2 text-sm md:text-lg text-white/60 bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+              <TrendingUp className="w-4 h-4 text-green-400" />
+              <span>
+                Ideal para medir tu <strong>evolución técnica</strong> y
+                constancia.
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* LIVE SCANNER */}
       <LiveScanner
         confidenceThreshold={confidence}
-        smoothingFactor={smoothing}
+        smoothingFactor={smoothingFactor}
+        userID={userID}
       />
     </div>
   );

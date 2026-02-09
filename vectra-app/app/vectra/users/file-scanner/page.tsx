@@ -1,7 +1,6 @@
 import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/actions";
-
 import FileScanner from "@/app/components/users/FileScanner";
-import { FileScan } from "lucide-react";
+import { FileVideo, Eye, FlaskConical } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -11,7 +10,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function FileScannerPage() {
-  const [confidence, smoothing] = await Promise.all([
+  const [confidence, smoothingFactor] = await Promise.all([
     getConfidenceThreshold(),
     getSmoothingFactor(),
   ]);
@@ -20,23 +19,58 @@ export default async function FileScannerPage() {
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground">
       {/* HEADER */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-            <FileScan className="w-6 h-6 text-primary" />
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10 shadow-lg shadow-primary/5">
+            <FileVideo className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Análisis de Archivo
-          </h1>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Análisis de Archivo
+            </h1>
+            <p className="text-sm text-muted-foreground hidden md:block">
+              Laboratorio de Diagnóstico Técnico
+            </p>
+          </div>
         </div>
-        <p className="text-white/60 max-w-2xl">
-          Sube grabaciones previas de entrenamientos para analizarlas.
-        </p>
+
+        {/* INFO BOX: Diseño consistente pero informativo */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full relative overflow-hidden">
+          {/* Decoración de fondo sutil */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+          <div className="flex gap-4 relative z-10">
+            <div className="flex-1">
+              <p className="text-white/70 text-sm md:text-lg text-center mb-4 leading-relaxed">
+                Sube tus videos para revisar errores frame a frame. Este modo es
+                exclusivamente para <strong>diagnóstico visual</strong>.
+              </p>
+
+              <div className="flex flex-col justify-center sm:flex-row gap-3">
+                {/* Badge 1: Sin Guardado */}
+                <div className="flex items-center text-center gap-2 text-sm md:text-lg text-white/60 bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+                  <FlaskConical className="w-4 h-4 text-primary" />
+                  <span>
+                    Las métricas <strong>NO se guardan</strong> en tu historial.
+                  </span>
+                </div>
+
+                {/* Badge 2: Visualización */}
+                <div className="flex items-center text-center gap-2 text-sm md:text-lg text-white/60 bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+                  <Eye className="w-4 h-4 text-primary" />
+                  <span>
+                    Solo para <strong>revisión y aprendizaje</strong>.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* FILE SCANNER */}
       <FileScanner
         confidenceThreshold={confidence}
-        smoothingFactor={smoothing}
+        smoothingFactor={smoothingFactor}
       />
     </div>
   );

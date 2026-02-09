@@ -6,6 +6,7 @@ import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { revalidatePath } from "next/cache";
+import { ExerciseFeedback } from "@/app/utils/ExerciseAnalyzer";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -299,5 +300,54 @@ export async function getSmoothingFactor() {
   } catch (error) {
     console.error("Error obteniendo factor de suavizado:", error);
     return 0.5;
+  }
+}
+
+// Insertamos el feedback en la base de datos
+export async function submitFeedbacks(
+  feedbacks: ExerciseFeedback[],
+  userID: string,
+) {
+  try {
+    const res = await fetch(`${baseUrl}/api/feedbacks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedbacks, userID }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { message: data?.error || "Error al enviar el feedback" };
+    }
+
+    return { message: "Feedback enviado correctamente" };
+  } catch (error) {
+    console.error("Error en submitFeedbacks:", error);
+    return { message: "Error de conexión con la API." };
+  }
+}
+
+// Insertamos las repeticiones en la base de datos
+export async function submitRepetitions(
+  count: number,
+  userID: string,
+  exercise: string,
+) {
+  try {
+    const res = await fetch(`${baseUrl}/api/repetitions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ count, userID, exercise }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { message: data?.error || "Error al enviar las repeticiones" };
+    }
+
+    return { message: "Repeticiones enviadas correctamente" };
+  } catch (error) {
+    console.error("Error en submitRepetitions:", error);
+    return { message: "Error de conexión con la API." };
   }
 }

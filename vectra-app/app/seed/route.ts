@@ -62,6 +62,31 @@ CREATE TABLE IF NOT EXISTS system_settings (
   return insertedSettings;
 }
 
+// Crea tabla de feedbacks
+async function seedFeedbacks() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS feedbacks (
+      id SERIAL PRIMARY KEY,
+      user_id VARCHAR(255), 
+      exercise VARCHAR(50) NOT NULL,
+      error VARCHAR(100) NOT NULL,
+      date TIMESTAMP DEFAULT NOW()
+    );
+  `;
+}
+
+async function seedRepetitions() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS repetitions (
+      id SERIAL PRIMARY KEY,
+      user_id VARCHAR(255), 
+      exercise VARCHAR(50) NOT NULL,
+      count INTEGER NOT NULL,
+      date TIMESTAMP DEFAULT NOW()
+    );
+  `;
+}
+
 // Ruta para sembrar la base de datos
 export async function GET() {
   try {
@@ -69,6 +94,8 @@ export async function GET() {
       await seedUsers(),
       await seedPasswordResetTokens(),
       await seedSystemSettings(),
+      await seedFeedbacks(),
+      await seedRepetitions(),
     ]);
 
     return Response.json({ message: "Database seeded successfully" });

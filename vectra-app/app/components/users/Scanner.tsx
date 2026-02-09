@@ -501,7 +501,7 @@ export default function Scanner({
               <p className="mb-4">Acceso denegado</p>
               <button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-white/10 rounded flex gap-2"
+                className="cursor-pointer px-4 py-2 bg-white/10 rounded flex gap-2"
               >
                 <RefreshCw /> Recargar
               </button>
