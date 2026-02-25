@@ -12,10 +12,13 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
+  // Obtenemos URL de retorno
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/login-success";
 
+  // Estado de visibilidad de contraseña
   const [showPassword, setShowPassword] = useState(false);
+  // Estado de acción del formulario
   const [errorMessage, formAction, isPending] = useActionState(
     authenticate,
     undefined,
@@ -23,34 +26,34 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
 
   return (
     <form action={formAction} className="space-y-6">
-      {/* --- CAMPO EMAIL --- */}
+      {/* CAMPO EMAIL */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <label htmlFor="email" className="text-sm font-medium text-white/80">
+          <label htmlFor="email" className="text-sm font-medium text-foreground/80">
             Correo Electrónico
           </label>
         </div>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Mail className="h-5 w-5 text-white/40" />
+            <Mail className="h-5 w-5 text-foreground/80" />
           </div>
           <input
             id="email"
             name="email"
             type="email"
             placeholder="usuario@ejemplo.com"
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-4 py-3 rounded-lg bg-foreground/5 border border-foreground/10 text-foreground placeholder:text-foreground/30 transition-all"
             required
           />
         </div>
       </div>
 
-      {/* --- CAMPO PASSWORD */}
+      {/* CAMPO PASSWORD */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <label
             htmlFor="password"
-            className="text-sm font-medium text-white/80"
+            className="text-sm font-medium text-foreground/80"
           >
             Contraseña
           </label>
@@ -58,7 +61,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
         <div className="relative">
           {/* Icono Candado (Izquierda) */}
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Lock className="h-5 w-5 text-white/40" />
+            <Lock className="h-5 w-5 text-foreground/80" />
           </div>
 
           {/* Input con tipo dinámico */}
@@ -67,7 +70,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
             name="password"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-foreground placeholder:text-white/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-10 pr-12 py-3 rounded-lg bg-foreground/5 border border-foreground/10 text-foreground placeholder:text-foreground/30 transition-all"
             required
           />
 
@@ -75,7 +78,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-primary hover:text-orange-600 transition-colors"
+            className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center cursor-pointer text-primary hover:text-primary/80 transition-colors"
             aria-label={
               showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
             }
@@ -89,19 +92,19 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
         </div>
       </div>
 
-      {/* --- OLVIDASTE CONTRASEÑA --- */}
+      {/* OLVIDASTE CONTRASEÑA */}
       {!isMaintenance && (
         <div className="flex justify-end">
           <Link
             href="/reset-password"
-            className="text-sm font-medium text-white/60 hover:text-primary transition-colors"
+            className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
           >
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
       )}
 
-      {/* --- BOTÓN SUBMIT --- */}
+      {/* BOTÓN SUBMIT */}
       <input type="hidden" name="redirectTo" value={callbackUrl} />
       <button
         type="submit"
@@ -110,7 +113,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
         className={`w-full flex items-center justify-center gap-2 text-foreground font-bold py-3 px-4 rounded-lg transition-all shadow-lg ${
           isPending
             ? "bg-primary/50 cursor-not-allowed opacity-70"
-            : "bg-primary cursor-pointer hover:bg-orange-600 shadow-orange-900/20 hover:shadow-orange-900/40 transform hover:-translate-y-0.5"
+            : "bg-primary cursor-pointer hover:bg-primary/80 shadow-primary-900/20 hover:shadow-primary-900/40 transform hover:-translate-y-0.5"
         }`}
       >
         {isPending ? "Iniciando..." : "Iniciar Sesión"}
@@ -124,7 +127,7 @@ export default function LoginForm({ isMaintenance = false }: LoginFormProps) {
         aria-atomic="true"
       >
         {errorMessage && (
-          <div className="flex items-center gap-2 text-red-400 animate-pulse bg-red-500/10 px-3 py-1 rounded-md w-full border border-red-500/20">
+          <div className="flex items-center gap-2 text-red-400 animate-pulse bg-red-400/5 px-3 py-1 rounded-md w-full border border-red-400/20">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <p className="text-sm font-medium">{errorMessage}</p>
           </div>

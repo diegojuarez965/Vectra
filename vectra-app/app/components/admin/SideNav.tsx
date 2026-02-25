@@ -6,10 +6,10 @@ import { signOut } from "@/auth";
 
 export default function SideNav() {
   return (
-    <div className="flex h-full flex-col px-3 py-4 md:px-4 md:py-6 bg-black md:border-r border-white/10">
+    <div className="flex h-full flex-col px-3 py-4 md:px-4 md:py-6 bg-black md:border-r border-foreground/10">
       {/* Logo Section */}
       <Link
-        className="mb-4 flex h-20 items-center justify-center rounded-xl bg-linear-to-br from-white/10 to-transparent border border-white/5 p-4 md:h-40 group hover:border-primary/30 transition-all duration-500 relative overflow-hidden"
+        className="mb-4 flex h-20 items-center justify-center rounded-xl bg-linear-to-br from-foreground/10 to-transparent border border-foreground/5 p-4 md:h-40 group hover:border-primary/30 transition-all duration-500 relative overflow-hidden"
         href="/"
       >
         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -36,7 +36,7 @@ export default function SideNav() {
         >
           <button
             aria-label="Cerrar sesión"
-            className="group flex h-12 w-full grow items-center justify-center gap-3 cursor-pointer rounded-xl border border-white/5 bg-white/5 p-3 text-sm font-medium text-white/60 transition-all duration-300 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 md:flex-none md:justify-start md:px-4"
+            className="group flex h-12 w-full grow items-center justify-center gap-3 cursor-pointer rounded-xl border border-foreground/5 bg-foreground/5 p-3 text-sm font-medium text-foreground/80 transition-all duration-300 hover:border-red-400/20 hover:bg-red-400/5 hover:text-red-400 md:flex-none md:justify-start md:px-4 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400"
           >
             <PowerIcon
               className="w-5 h-5 transition-transform group-hover:scale-110"

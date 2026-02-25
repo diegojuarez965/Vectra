@@ -11,10 +11,10 @@ import {
   Play,
   Square,
   XCircle,
-  Activity,
 } from "lucide-react";
 import Scanner from "@/app/components/users/Scanner";
-import { ExerciseFeedback } from "@/app/utils/ExerciseAnalyzer";
+import { ExerciseFeedback } from "@/app/lib/definitions";
+
 import { useTextToSpeech } from "@/app/utils/useTextToSpeech";
 import { useRef } from "react";
 import { submitFeedbacks, submitRepetitions } from "@/app/lib/actions";
@@ -61,26 +61,60 @@ export default function LiveScanner({
     setIsScanning(true);
   };
 
-  const handleStop = () => {
-    // Enviar las repeticiones
-    if (repeticiones > 0 && userID) {
-      submitRepetitions(repeticiones, userID, "BICEP_CURL");
-      setRepeticiones(0);
-    }
-    // Enviar feedbacks técnicos acumulados al finalizar el escaneo
-    if (feedbacksAcumulados.current.length > 0 && userID) {
-      submitFeedbacks(feedbacksAcumulados.current, userID);
-      feedbacksAcumulados.current = [];
-    }
-    cancel(); // Cortar voz
+  const [submitRepetitionsError, setSubmitRepetitionsError] = useState(""); // Estado para manejar errores al enviar repeticiones
+  const [submitFeedbackError, setSubmitFeedbackError] = useState(""); // Estado para manejar errores al enviar feedbacks técnicos
+  const [isSaving, setIsSaving] = useState(false); // Estado para indicar si se esta guardando
+
+  // Handler para detener el escaneo
+  const handleStop = async () => {
+    setSubmitFeedbackError("");
+    setSubmitRepetitionsError("");
+    setIsSaving(true);
+    cancel();
     setIsScanning(false);
+
+    const promises = [];
+
+    // Enviamos las repeticiones
+    if (repeticiones > 0 && userID) {
+      promises.push(
+        submitRepetitions(repeticiones, userID, "BICEP_CURL").then((res) => {
+          if (!res.success) setSubmitRepetitionsError(res.message);
+          else setRepeticiones(0);
+        }),
+      );
+    }
+
+    // Enviamos los feedbacks
+    if (feedbacksAcumulados.current.length > 0 && userID) {
+      promises.push(
+        submitFeedbacks(feedbacksAcumulados.current, userID).then((res) => {
+          if (!res.success) setSubmitFeedbackError(res.message);
+          else feedbacksAcumulados.current = []; // Reset solo si tuvo éxito
+        }),
+      );
+    }
+
+    // Esperamos a que todo termine
+    await Promise.all(promises);
+    setIsSaving(false);
   };
 
+  // Handler para cancelar
   const handleCancel = () => {
     cancel(); // Cortar voz
     setRepeticiones(0);
     setIsScanning(false);
   };
+
+  //Efecto para hacer pitido cuando cambian las repeticiones
+  useEffect(() => {
+    if (!isScanning || isMuted) return;
+    if (repeticiones > 0) {
+      const audio = new Audio("/sounds/beep.mp3");
+      audio.play();
+    }
+  }, [repeticiones, isScanning, isMuted]);
 
   // Efecto para acumular feedbacks técnicos
   useEffect(() => {
@@ -129,34 +163,50 @@ export default function LiveScanner({
     }
   }, [isMuted, cancel]);
 
-  // 1. PANTALLA DE INICIO
+  // PANTALLA DE INICIO
   if (!isScanning) {
     return (
-      <div className="w-full h-[80vh] flex flex-col items-center justify-center p-4 animate-in fade-in zoom-in duration-500">
-        <div className="bg-black/20 backdrop-blur-xl border border-white/10 p-8 md:p-12 rounded-3xl text-center max-w-lg w-full shadow-2xl">
-          <div className="mx-auto w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mb-6 border border-primary/30">
-            <Activity className="w-10 h-10 text-primary" />
-          </div>
+      <div className="w-full flex flex-col items-center justify-center p-4 animate-in fade-in zoom-in duration-500">
+        <div className="bg-black/20 backdrop-blur-xl border border-foreground/10 p-8 md:p-12 rounded-3xl text-center max-w-lg w-full shadow-2xl">
           <h2 className="text-3xl font-bold text-foreground mb-2">
             Listo para Entrenar
           </h2>
-          <p className="text-white/60 mb-8">
+          <p className="text-foreground/80 mb-8">
             Asegúrate de tener buena iluminación y que tu cuerpo sea visible en
             la cámara.
           </p>
           <button
             onClick={handleStart}
-            className="cursor-pointer w-full py-4 bg-primary hover:bg-primary/90 text-foreground font-bold rounded-xl transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(var(--primary),0.4)] flex items-center justify-center gap-3"
+            className="cursor-pointer w-full py-4 bg-primary hover:bg-primary/80 text-foreground font-bold rounded-xl transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(var(--primary),0.4)] flex items-center justify-center gap-3"
           >
             <Play className="w-6 h-6 fill-current" />
             INICIAR ANÁLISIS
           </button>
         </div>
+        {/* VISUALIZACIÓN DE ERRORES AL GUARDAR */}
+        {(submitRepetitionsError || submitFeedbackError) && (
+          <div className="mt-4 p-4 bg-red-400/5 border border-red-400/20 rounded-xl max-w-lg w-full animate-in slide-in-from-bottom-2">
+            <div className="flex items-center gap-2 text-red-400 mb-1 font-bold">
+              <AlertCircle className="w-5 h-5" />
+              <span>Error al guardar sesión anterior</span>
+            </div>
+            {submitRepetitionsError && (
+              <p className="text-sm text-red-400">
+                • Repeticiones: {submitRepetitionsError}
+              </p>
+            )}
+            {submitFeedbackError && (
+              <p className="text-sm text-red-400">
+                • Feedback técnico: {submitFeedbackError}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
 
-  // 2. PANTALLA DE ESCANEO
+  // PANTALLA DE ESCANEO
   return (
     <div className="w-full max-w-7xl mx-auto p-2 md:p-4 font-sans text-foreground animate-in fade-in duration-700">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
@@ -174,7 +224,7 @@ export default function LiveScanner({
                   Cámara en Vivo
                 </h2>
                 <p className="text-[10px] md:text-xs text-foreground mt-1 uppercase tracking-wider font-semibold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />{" "}
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400/5 animate-pulse" />{" "}
                   Grabando
                 </p>
               </div>
@@ -185,34 +235,51 @@ export default function LiveScanner({
               {/* Botón Mute */}
               <button
                 onClick={() => setIsMuted(!isMuted)}
-                className="cursor-pointer flex items-center justify-center p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-foreground transition-colors"
+                className="cursor-pointer flex items-center justify-center p-2.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground transition-colors"
                 title={isMuted ? "Activar Voz" : "Silenciar Voz"}
               >
                 {isMuted ? (
-                  <VolumeX className="w-5 h-5 opacity-50" />
+                  <VolumeX className="w-5 h-5" />
                 ) : (
                   <Volume2 className="w-5 h-5 text-primary" />
                 )}
               </button>
 
-              <div className="h-6 w-px bg-white/10 mx-1" />
+              <div className="h-6 w-px bg-foreground/10 mx-1" />
 
               {/* Botón Cancelar */}
               <button
                 onClick={handleCancel}
-                className="cursor-pointer flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/5 text-white/70 hover:text-foreground rounded-xl transition-colors text-xs font-bold uppercase tracking-wider"
+                className="cursor-pointer flex items-center gap-2 px-3 py-2 bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground/80 hover:text-foreground rounded-xl transition-colors text-xs font-bold uppercase tracking-wider"
               >
                 <XCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Cancelar</span>
               </button>
 
-              {/* Botón Detener */}
+              {/* Botón Detener / Guardar */}
               <button
                 onClick={handleStop}
-                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-xl transition-colors text-xs font-bold uppercase tracking-wider"
+                disabled={isSaving} // Deshabilitar si está guardando
+                className={`
+                  cursor-pointer flex items-center gap-2 px-4 py-2 border rounded-xl transition-all text-xs font-bold uppercase tracking-wider
+                  ${
+                    isSaving
+                      ? "bg-gray-500/10 border-gray-500/20 text-gray-400"
+                      : "bg-red-400/5 hover:bg-red-400/10 border-red-400/20 text-red-400 hover:scale-105 shadow-lg shadow-red-400/10 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400"
+                  }
+                `}
               >
-                <Square className="w-4 h-4 fill-current" />
-                <span className="hidden sm:inline">Guardar</span>
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span>Guardando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-4 h-4 fill-current" />
+                    <span className="hidden sm:inline">Finalizar</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -234,7 +301,7 @@ export default function LiveScanner({
 
         {/* COLUMNA LATERAL (FEEDBACK) */}
         <div className="lg:col-span-3 flex flex-col gap-4">
-          <div className="flex-1 flex flex-col justify-center items-center text-center">
+          <div className="flex-1 flex flex-col justify-center items-center text-center bg-black/20 backdrop-blur-md p-3 md:p-4 rounded-xl md:rounded-2xl border border-foreground/10">
             {currentFeedback ? (
               <div className="animate-in zoom-in duration-300 w-full">
                 {/* ICONO */}
@@ -246,7 +313,7 @@ export default function LiveScanner({
                         ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
                         : currentFeedback.errorType === "POSITIONING"
                           ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                          : "bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                          : "bg-red-400/5 text-red-400 border-red-400/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
                     }
                   `}
                 >
@@ -271,7 +338,7 @@ export default function LiveScanner({
                         ? "bg-blue-500/5 border-blue-500/10"
                         : currentFeedback.errorType === "POSITIONING"
                           ? "bg-yellow-500/5 border-yellow-500/10"
-                          : "bg-red-500/5 border-red-500/10"
+                          : "bg-red-400/5 border-red-400/20"
                     }
                   `}
                 >
@@ -282,7 +349,7 @@ export default function LiveScanner({
                           ? "text-blue-200/90"
                           : currentFeedback.errorType === "POSITIONING"
                             ? "text-yellow-200/90"
-                            : "text-red-200/90"
+                            : "text-red-400"
                       }`}
                   >
                     {currentFeedback.message}
@@ -298,7 +365,7 @@ export default function LiveScanner({
                 <h3 className="text-base md:text-lg font-bold text-foreground mb-2">
                   Buena Forma
                 </h3>
-                <p className="text-xs md:text-sm text-foreground/50">
+                <p className="text-xs md:text-sm text-foreground/80">
                   Todo parece ir bien
                 </p>
               </div>

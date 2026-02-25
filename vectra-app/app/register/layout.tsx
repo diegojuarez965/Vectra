@@ -1,4 +1,4 @@
-import { getNoRegisterMode } from "@/app/lib/actions";
+import { getNoRegisterMode } from "@/app/lib/data";
 import NoRegisterPage from "@/app/no-register-mode/page";
 import { Metadata } from "next";
 

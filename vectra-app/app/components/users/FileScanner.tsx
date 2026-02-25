@@ -12,7 +12,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import Scanner from "@/app/components/users/Scanner";
-import { ExerciseFeedback } from "@/app/utils/ExerciseAnalyzer";
+import { ExerciseFeedback } from "@/app/lib/definitions";
 import { useTextToSpeech } from "@/app/utils/useTextToSpeech";
 
 interface FileScannerProps {
@@ -59,6 +59,15 @@ export default function FileScanner({
       cancel();
     };
   }, [videoSrc, cancel]);
+
+  //Efecto para hacer pitido cuando cambian las repeticiones
+  useEffect(() => {
+    if (isMuted) return;
+    if (repeticiones > 0) {
+      const audio = new Audio("/sounds/beep.mp3");
+      audio.play();
+    }
+  }, [repeticiones, isMuted]);
 
   // Efecto para hablar
   useEffect(() => {
@@ -151,6 +160,14 @@ export default function FileScanner({
       {/* Zona de Carga */}
       {!videoSrc && (
         <div
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -158,6 +175,7 @@ export default function FileScanner({
           className={`
             relative group cursor-pointer flex flex-col items-center justify-center 
             w-full h-80 md:h-125 rounded-2xl md:rounded-3xl border-2 border-dashed transition-all duration-300
+            focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
             ${
               isDragging
                 ? "border-primary bg-primary/10 scale-[1.01]"
@@ -177,7 +195,7 @@ export default function FileScanner({
             <div
               className={`
               p-4 md:p-6 rounded-full transition-transform duration-300 shadow-xl
-              ${isDragging ? "bg-primary text-foreground scale-110" : "bg-black/40 text-foreground/50 group-hover:text-primary"}
+              ${isDragging ? "bg-primary text-foreground scale-110" : "bg-black/40 text-foreground/80 group-hover:text-primary"}
             `}
             >
               <Upload className="w-8 h-8 md:w-10 md:h-10" />
@@ -186,7 +204,7 @@ export default function FileScanner({
               <h3 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
                 Sube tu Video
               </h3>
-              <p className="text-sm md:text-base text-foreground/60 max-w-xs mx-auto">
+              <p className="text-sm md:text-base text-foreground/80 max-w-xs mx-auto">
                 Arrastra tu archivo aquí para que{" "}
                 <span className="text-primary font-bold">Vectra</span> analice
                 tu técnica.
@@ -195,7 +213,6 @@ export default function FileScanner({
           </div>
         </div>
       )}
-
       {/* Dashboard de Análisis */}
       {videoSrc && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -221,12 +238,11 @@ export default function FileScanner({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsMuted(!isMuted)}
-                  className="cursor-pointer p-2 rounded-full hover:bg-foreground/10 text-foreground/60 hover:text-foreground transition-colors"
+                  className="cursor-pointer flex items-center justify-center p-2.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 text-foreground transition-colors"
                   title={isMuted ? "Activar Voz" : "Silenciar Voz"}
-                  aria-label={isMuted ? "Activar Voz" : "Silenciar Voz"}
                 >
                   {isMuted ? (
-                    <VolumeX className="w-5 h-5" />
+                    <VolumeX className="w-5 h-5 opacity-50" />
                   ) : (
                     <Volume2 className="w-5 h-5 text-primary" />
                   )}
@@ -234,7 +250,7 @@ export default function FileScanner({
 
                 <button
                   onClick={clearVideo}
-                  className="cursor-pointer p-2 hover:bg-red-500/10 rounded-full text-foreground/40 hover:text-red-500 transition-colors"
+                  className="cursor-pointer flex items-center gap-2 p-2.5 border rounded-xl transition-all text-xs font-bold uppercase tracking-wider bg-red-400/5 hover:bg-red-400/10 border-red-400/20 text-red-400 hover:scale-105 shadow-lg shadow-red-400/10 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400"
                   title="Cerrar video"
                 >
                   <X className="w-5 h-5" />
@@ -255,48 +271,77 @@ export default function FileScanner({
             </div>
           </div>
 
-          {/* COACH FEEDBACK */}
+          {/* COLUMNA LATERAL (FEEDBACK) */}
           <div className="lg:col-span-3 flex flex-col gap-4">
-            {/* Tarjeta de Feedback Principal */}
-            <div className="flex-1 bg-black/20 backdrop-blur-md rounded-2xl md:rounded-3xl p-5 md:p-6 border border-foreground/10 flex flex-col relative overflow-hidden min-h-50">
-              <div className="flex items-center justify-center gap-2 mb-4 md:mb-6 text-primary">
-                <Dumbbell className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest font-mono">
-                  Entrenador Virtual
-                </span>
-              </div>
-
-              <div className="flex-1 flex flex-col justify-center items-center text-center">
-                {currentFeedback ? (
-                  // ESTADO: CORRECCIÓN
-                  <div className="animate-in zoom-in duration-300 w-full">
-                    <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-3 md:mb-4 border border-red-500/20">
-                      <AlertCircle className="w-6 h-6 md:w-8 md:h-8" />
-                    </div>
-                    <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 leading-tight">
-                      Corrección
-                    </h3>
-                    <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-3 md:p-4 mt-2">
-                      <p className="text-xs md:text-sm text-red-200/90 font-medium">
-                        {currentFeedback.message}
-                      </p>
-                    </div>
+            <div className="flex-1 flex flex-col justify-center items-center text-center bg-black/20 backdrop-blur-md p-3 md:p-4 rounded-xl md:rounded-2xl border border-foreground/10">
+              {currentFeedback ? (
+                <div className="animate-in zoom-in duration-300 w-full">
+                  {/* ICONO */}
+                  <div
+                    className={`
+                    mx-auto w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 md:mb-4 border shadow-[0_0_20px_rgba(0,0,0,0.2)]
+                    ${
+                      currentFeedback.errorType === "SYSTEM"
+                        ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                        : currentFeedback.errorType === "POSITIONING"
+                          ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                          : "bg-red-400/5 text-red-400 border-red-400/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                    }
+                  `}
+                  >
+                    <AlertCircle className="w-6 h-6 md:w-8 md:h-8" />
                   </div>
-                ) : (
-                  // ESTADO: BUENA FORMA
-                  <div className="animate-in fade-in duration-500 opacity-60 hover:opacity-100 transition-opacity">
-                    <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mb-3 md:mb-4 border border-green-500/20">
-                      <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8" />
-                    </div>
-                    <h3 className="text-base md:text-lg font-bold text-foreground mb-2">
-                      Buena Forma
-                    </h3>
-                    <p className="text-xs md:text-sm text-foreground/50">
-                      Todo parece ir bien
+
+                  {/* TÍTULO */}
+                  <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 leading-tight">
+                    {currentFeedback.errorType === "SYSTEM"
+                      ? "Sistema"
+                      : currentFeedback.errorType === "POSITIONING"
+                        ? "Posición"
+                        : "Corrección Técnica"}
+                  </h3>
+
+                  {/* CAJA DE MENSAJE */}
+                  <div
+                    className={`
+                    border rounded-xl p-3 md:p-4 mt-2
+                    ${
+                      currentFeedback.errorType === "SYSTEM"
+                        ? "bg-blue-500/5 border-blue-500/10"
+                        : currentFeedback.errorType === "POSITIONING"
+                          ? "bg-yellow-500/5 border-yellow-500/10"
+                          : "bg-red-400/5 border-red-400/20"
+                    }
+                  `}
+                  >
+                    <p
+                      className={`text-xs md:text-sm font-medium 
+                      ${
+                        currentFeedback.errorType === "SYSTEM"
+                          ? "text-blue-200/90"
+                          : currentFeedback.errorType === "POSITIONING"
+                            ? "text-yellow-200/90"
+                            : "text-red-400"
+                      }`}
+                    >
+                      {currentFeedback.message}
                     </p>
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                /* ESTADO: BUENA FORMA */
+                <div className="animate-in fade-in duration-500 opacity-60 hover:opacity-100 transition-opacity">
+                  <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mb-3 md:mb-4 border border-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]">
+                    <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8" />
+                  </div>
+                  <h3 className="text-base md:text-lg font-bold text-foreground mb-2">
+                    Buena Forma
+                  </h3>
+                  <p className="text-xs md:text-sm text-foreground/80">
+                    Todo parece ir bien
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Tarjeta de Repeticiones */}
@@ -308,7 +353,7 @@ export default function FileScanner({
                 </span>
               </div>
               <div className="flex flex-col items-center gap-2">
-                <span className="text-lg md:text-2xl font-bold text-foreground">
+                <span className="text-4xl md:text-5xl font-bold text-foreground tracking-tighter">
                   {repeticiones}
                 </span>
               </div>

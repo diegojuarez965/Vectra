@@ -6,14 +6,18 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 // Obtenemos el modo de mantenimiento actual
 export async function GET() {
   try {
-    const result =
-      await sql`SELECT value FROM system_settings WHERE key = 'maintenance_mode'`;
+    const result = await sql`
+      SELECT value FROM system_settings WHERE key = 'maintenance_mode'
+    `;
 
+    // Si no hay configuración previa, por defecto es "false"
     const data = result[0] || { value: "false" };
+
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    console.error("Error API GET maintenance_mode:", error);
     return NextResponse.json(
-      { error: "Error de base de datos" },
+      { error: "Error interno de base de datos" },
       { status: 500 },
     );
   }

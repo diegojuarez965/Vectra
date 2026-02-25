@@ -3,7 +3,7 @@ import {
   getNoRegisterMode,
   getConfidenceThreshold,
   getSmoothingFactor,
-} from "@/app/lib/actions";
+} from "@/app/lib/data";
 import SettingsEditor from "@/app/components/admin/SettingsEditor";
 import { Metadata } from "next";
 

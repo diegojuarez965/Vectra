@@ -22,10 +22,8 @@ import {
   Volume2,
   Pause,
 } from "lucide-react";
-import {
-  BicepCurlAnalyzer,
-  ExerciseFeedback,
-} from "@/app/utils/ExerciseAnalyzer";
+import { BicepCurlAnalyzer } from "@/app/utils/ExerciseAnalyzer";
+import { ExerciseFeedback } from "@/app/lib/definitions";
 
 // Conexiones del esqueleto relevantes
 const MY_CONNECTIONS = [
@@ -473,7 +471,7 @@ export default function Scanner({
       ref={containerRef}
       // Al hacer click en el contenedor, mostramos/ocultamos controles
       onClick={() => setShowControls((prev) => !prev)}
-      className={`bg-black overflow-hidden shadow-2xl group transition-all duration-300 border-none
+      className={`bg-black/20 overflow-hidden shadow-2xl group transition-all duration-300 border-none
       ${
         isFullscreen
           ? "fixed inset-0 z-100 w-screen h-dvh rounded-none"
@@ -484,7 +482,7 @@ export default function Scanner({
     >
       {/* Loader */}
       {!isModelLoaded && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#2a2a2a] text-foreground">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/20 text-foreground">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
           <p className="text-lg font-medium animate-pulse">
             Cargando Motores Neuronales...
@@ -496,12 +494,12 @@ export default function Scanner({
       {mode === "live" && (
         <>
           {isModelLoaded && cameraPermission === false && (
-            <div className="absolute inset-0 z-40 bg-black/90 text-foreground p-6 text-center flex flex-col items-center justify-center">
-              <CameraOff className="w-16 h-16 text-red-500 mb-4" />
+            <div className="absolute inset-0 z-40 bg-black/20 text-foreground p-6 text-center flex flex-col items-center justify-center">
+              <CameraOff className="w-16 h-16 text-red-400 mb-4" />
               <p className="mb-4">Acceso denegado</p>
               <button
                 onClick={() => window.location.reload()}
-                className="cursor-pointer px-4 py-2 bg-white/10 rounded flex gap-2"
+                className="cursor-pointer px-4 py-2 bg-primary hover:opacity-80 rounded flex gap-2"
               >
                 <RefreshCw /> Recargar
               </button>
@@ -528,7 +526,7 @@ export default function Scanner({
                 e.stopPropagation();
                 toggleCamera();
               }}
-              className="cursor-pointer absolute top-4 left-4 z-60 p-3 bg-black/50 hover:bg-primary/80 text-foreground rounded-full border border-white/10 backdrop-blur-md"
+              className="cursor-pointer absolute top-4 left-4 z-60 p-3 bg-background hover:bg-primary/80 text-foreground rounded-full border border-foreground/10 backdrop-blur-md"
             >
               <SwitchCamera className="w-5 h-5" />
             </button>
@@ -540,7 +538,7 @@ export default function Scanner({
       {mode === "file" && (
         <>
           {!videoSrc ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-foreground/80">
               <Upload className="w-16 h-16 mb-4 opacity-30" />
               <p>Sube un video</p>
             </div>
@@ -568,7 +566,7 @@ export default function Scanner({
                 className={`absolute bottom-0 left-0 right-0 z-60 bg-linear-to-t from-black/90 via-black/60 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
               >
                 <div className="flex flex-col gap-2 max-w-4xl mx-auto w-full">
-                  {/* 1. BARRA DE ADELANTAMIENTO  */}
+                  {/* BARRA DE ADELANTAMIENTO  */}
                   <div className="flex items-center gap-3 text-foreground text-xs font-mono font-medium">
                     <span className="min-w-10 text-right">
                       {formatTime(currentTime)}
@@ -579,12 +577,12 @@ export default function Scanner({
                       max={duration || 100}
                       value={currentTime}
                       onChange={handleSeek}
-                      className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg"
+                      className="flex-1 h-1.5 bg-foreground/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg"
                     />
                     <span className="min-w-40px">{formatTime(duration)}</span>
                   </div>
 
-                  {/* 2. BOTONERA INFERIOR */}
+                  {/* BOTONERA INFERIOR */}
                   <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-6">
                       {/* Play/Pause */}
@@ -640,20 +638,20 @@ export default function Scanner({
 
       {/* BADGES SUPERIORES */}
       <div className="absolute top-4 right-4 z-50 pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1 bg-black/50 rounded-full border border-white/10 backdrop-blur-md">
+        <div className="flex items-center gap-2 px-3 py-1 bg-background rounded-full border border-foreground/10 backdrop-blur-md">
           {mode === "live" ? (
             <>
               <div
-                className={`w-2 h-2 rounded-full ${webcamRunning ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
+                className={`w-2 h-2 rounded-full ${webcamRunning ? "bg-green-500 animate-pulse" : "bg-red-400/5"}`}
               />
-              <span className="text-xs font-mono text-white/80">LIVE</span>
+              <span className="text-xs font-mono text-foreground/80">LIVE</span>
             </>
           ) : (
             <>
               <Play
-                className={`w-3 h-3 ${isFilePlaying ? "text-green-500" : "text-white/50"}`}
+                className={`w-3 h-3 ${isFilePlaying ? "text-green-500" : "text-foreground/80"}`}
               />
-              <span className="text-xs font-mono text-white/80">REPLAY</span>
+              <span className="text-xs font-mono text-foreground/80">REPLAY</span>
             </>
           )}
         </div>
@@ -666,7 +664,7 @@ export default function Scanner({
           <button
             aria-label="Fullscreen"
             onClick={toggleFullscreen}
-            className="hover:bg-primary/80 cursor-pointer p-2 bg-black/50 text-foreground rounded-full border border-white/10 backdrop-blur-md"
+            className="hover:bg-primary/80 cursor-pointer p-2 bg-background text-foreground rounded-full border border-foreground/10 backdrop-blur-md"
           >
             {isFullscreen ? (
               <Minimize className="w-5 h-5" />

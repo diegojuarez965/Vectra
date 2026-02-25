@@ -8,6 +8,7 @@ import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
+// Función para obtener el usuario por email
 async function getUser(email: string): Promise<User | undefined> {
   try {
     const user = await sql<User[]>`SELECT * FROM users WHERE email=${email}`;
@@ -23,6 +24,7 @@ export const { auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
+        // Validar credenciales
         const parsedCredentials = z
           .object({ email: z.string().email(), password: z.string().min(6) })
           .safeParse(credentials);
@@ -33,10 +35,8 @@ export const { auth, signIn, signOut } = NextAuth({
           if (!user) return null;
 
           const passwordsMatch = await bcrypt.compare(password, user.password);
-
           if (passwordsMatch) return user;
         }
-
         console.log("Invalid credentials");
         return null;
       },
@@ -44,7 +44,8 @@ export const { auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user }) { // Se ejecuta al iniciar sesión  
+    async jwt({ token, user }) {
+      // Se ejecuta al iniciar sesión
       if (user) {
         const u = user as User;
 
@@ -54,7 +55,8 @@ export const { auth, signIn, signOut } = NextAuth({
       return token;
     },
 
-    async session({ session, token }) { // Copia los datos del token al objeto session
+    async session({ session, token }) {
+      // Copia los datos del token al objeto session
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.rol = token.rol as "admin" | "user";

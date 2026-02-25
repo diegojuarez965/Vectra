@@ -25,17 +25,17 @@ export default function ResetPasswordPage() {
             />
           </div>
         </Link>
-        <h2 className="text-3xl font-bold text-white tracking-tight">
+        <h2 className="text-3xl font-bold text-foreground tracking-tight">
           Nueva Contraseña
         </h2>
-        <p className="mt-2 text-sm text-white/60">
+        <p className="mt-2 text-sm text-foreground/80">
           Asegura tu cuenta con una clave robusta
         </p>
       </div>
 
       {/* TARJETA */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-[#4a4a4a] py-8 px-4 shadow-2xl sm:rounded-xl sm:px-10 border border-white/5 backdrop-blur-sm">
+        <div className="bg-[#4a4a4a] py-8 px-4 shadow-2xl sm:rounded-xl sm:px-10 border border-foreground/5 backdrop-blur-sm">
           {/* Formulario */}
           <ResetPasswordForm />
         </div>

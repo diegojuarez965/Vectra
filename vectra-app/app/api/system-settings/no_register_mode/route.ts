@@ -9,11 +9,13 @@ export async function GET() {
     const result =
       await sql`SELECT value FROM system_settings WHERE key = 'no_register_mode'`;
 
+    // Si no hay configuración previa, por defecto es "false"
     const data = result[0] || { value: "false" };
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    console.error("Error API GET no_register_mode:", error);
     return NextResponse.json(
-      { error: "Error de base de datos" },
+      { error: "Error interno de base de datos" },
       { status: 500 },
     );
   }

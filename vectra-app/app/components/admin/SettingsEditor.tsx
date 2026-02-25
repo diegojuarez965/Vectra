@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Sliders, ShieldAlert, HardDrive, Bell } from "lucide-react";
+import {
+  Sliders,
+  ShieldAlert,
+  HardDrive,
+  Bell,
+  ChevronDown,
+} from "lucide-react";
 import clsx from "clsx";
 import {
   updateMaintenanceMode,
@@ -39,22 +45,28 @@ export default function SettingsEditor({
   const [smoothingFactor, setSmoothingFactor] = useState(
     initialSmoothingFactor, // Estado inicial del factor de suavizado
   );
+
+  const [maintenanceError, setMaintenanceError] = useState(""); // Estado de error para el modo mantenimiento
+  const [confidenceThresholdError, setConfidenceThresholdError] = useState(""); // Estado de error para el umbral de confianza
+  const [registerModeError, setRegisterModeError] = useState(""); // Estado de error para el modo sin registro
+  const [smoothingFactorError, setSmoothingFactorError] = useState(""); // Estado de error para el factor de suavizado
+
   return (
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground pb-24">
       {/* HEADER */}
-      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end border-b border-white/10 pb-6">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end border-b border-foreground/10 pb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Configuración del Sistema
           </h1>
-          <p className="mt-1 text-white/60">
+          <p className="mt-1 text-foreground/80">
             Ajusta los parámetros globales de Vectra.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* 1. TOLERANCIAS Y UMBRALES DE IA */}
+        {/* TOLERANCIAS Y UMBRALES DE IA */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 text-primary mb-2">
             <Sliders className="w-5 h-5" />
@@ -72,7 +84,12 @@ export default function SettingsEditor({
             >
               <form
                 action={async (formData) => {
-                  await updateConfidenceThreshold(formData);
+                  setConfidenceThresholdError("");
+                  const res = await updateConfidenceThreshold(formData);
+                  if (!res.success) {
+                    setConfidenceThresholdError(res.message);
+                    setConfidenceThreshold(initialConfidenceThreshold);
+                  }
                 }}
               >
                 <input
@@ -87,9 +104,15 @@ export default function SettingsEditor({
                   }
                   onMouseUp={(e) => e.currentTarget.form?.requestSubmit()}
                   onTouchEnd={(e) => e.currentTarget.form?.requestSubmit()}
-                  className="w-full accent-primary h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                  className="w-full accent-primary h-2 bg-foreground/10 rounded-lg appearance-none cursor-pointer"
                 />
               </form>
+
+              {confidenceThresholdError && (
+                <p className="text-red-400 text-sm mt-1">
+                  {confidenceThresholdError}
+                </p>
+              )}
             </SettingCard>
             {/* Configurar el factor de suavizado */}
             <SettingCard
@@ -105,7 +128,12 @@ export default function SettingsEditor({
             >
               <form
                 action={async (formData) => {
-                  await updateSmoothingFactor(formData);
+                  setSmoothingFactorError("");
+                  const res = await updateSmoothingFactor(formData);
+                  if (!res.success) {
+                    setSmoothingFactorError(res.message);
+                    setSmoothingFactor(initialSmoothingFactor);
+                  }
                 }}
                 className="flex gap-2"
               >
@@ -118,8 +146,8 @@ export default function SettingsEditor({
                   className={clsx(
                     "cursor-pointer flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all duration-200",
                     smoothingFactor === 0.8
-                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
-                      : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-foreground",
+                      ? "bg-primary/5 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
+                      : "bg-foreground/5 border-foreground/10 text-foreground/80 hover:bg-foreground/10 hover:text-foreground",
                   )}
                 >
                   Bajo
@@ -134,8 +162,8 @@ export default function SettingsEditor({
                   className={clsx(
                     "cursor-pointer flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all duration-200",
                     smoothingFactor === 0.5
-                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
-                      : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-foreground",
+                      ? "bg-primary/5 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
+                      : "bg-foreground/5 border-foreground/10 text-foreground/80 hover:bg-foreground/10 hover:text-foreground",
                   )}
                 >
                   Media
@@ -150,18 +178,24 @@ export default function SettingsEditor({
                   className={clsx(
                     "cursor-pointer flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all duration-200",
                     smoothingFactor === 0.2
-                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
-                      : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-foreground",
+                      ? "bg-primary/5 border-primary text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]"
+                      : "bg-foreground/5 border-foreground/10 text-foreground/80 hover:bg-foreground/10 hover:text-foreground",
                   )}
                 >
                   Alto
                 </button>
               </form>
+
+              {smoothingFactorError && (
+                <p className="text-red-400 text-sm mt-1">
+                  {smoothingFactorError}
+                </p>
+              )}
             </SettingCard>
           </div>
         </section>
 
-        {/* 2. GESTIÓN OPERATIVA */}
+        {/* GESTIÓN OPERATIVA */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 text-blue-400 mb-2">
             <ShieldAlert className="w-5 h-5" />
@@ -181,8 +215,13 @@ export default function SettingsEditor({
                 action={async (formData) => {
                   const newValue = formData.get("maintenance_mode") === "on";
                   setMaintenanceActive(newValue);
+                  setMaintenanceError("");
 
-                  await updateMaintenanceMode(formData);
+                  const res = await updateMaintenanceMode(formData);
+                  if (!res.success) {
+                    setMaintenanceError(res.message);
+                    setMaintenanceActive(!newValue);
+                  }
                 }}
               >
                 <input
@@ -194,18 +233,22 @@ export default function SettingsEditor({
                 <button
                   type="submit"
                   className={clsx(
-                    "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-black focus:ring-red-500",
-                    maintenanceActive ? "bg-red-500" : "bg-white/20",
+                    "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer",
+                    "focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400",
+                    maintenanceActive ? "bg-red-400/5" : "bg-foreground/20",
                   )}
                 >
-                  <div
+                  <span
                     className={clsx(
-                      "absolute top-1 w-3 h-3 rounded-full bg-foreground transition-transform duration-300 shadow-md",
-                      maintenanceActive ? "left-6" : "left-1",
+                      "absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-300",
+                      maintenanceActive ? "translate-x-5" : "translate-x-0",
                     )}
                   />
                 </button>
               </form>
+              {maintenanceError && (
+                <p className="text-red-400 text-sm mt-1">{maintenanceError}</p>
+              )}
             </SettingCard>
 
             {/* Modo Sin Registro */}
@@ -218,8 +261,13 @@ export default function SettingsEditor({
                 action={async (formData) => {
                   const newValue = formData.get("no_register_mode") === "on";
                   setNoRegisterActive(newValue);
+                  setRegisterModeError("");
 
-                  await updateNoRegisterMode(formData);
+                  const res = await updateNoRegisterMode(formData);
+                  if (!res.success) {
+                    setRegisterModeError(res.message);
+                    setNoRegisterActive(!newValue);
+                  }
                 }}
               >
                 <input
@@ -231,23 +279,27 @@ export default function SettingsEditor({
                 <button
                   type="submit"
                   className={clsx(
-                    "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-black focus:ring-red-500",
-                    noRegisterActive ? "bg-red-500" : "bg-white/20",
+                    "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer",
+                    "focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400",
+                    noRegisterActive ? "bg-red-400/5" : "bg-foreground/20",
                   )}
                 >
-                  <div
+                  <span
                     className={clsx(
-                      "absolute top-1 w-3 h-3 rounded-full bg-foreground transition-transform duration-300 shadow-md",
-                      noRegisterActive ? "left-6" : "left-1",
+                      "absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-300",
+                      noRegisterActive ? "translate-x-5" : "translate-x-0",
                     )}
                   />
                 </button>
               </form>
+              {registerModeError && (
+                <p className="text-red-400 text-sm mt-1">{registerModeError}</p>
+              )}
             </SettingCard>
           </div>
         </section>
 
-        {/* 3. ALMACENAMIENTO Y LÍMITES */}
+        {/* ALMACENAMIENTO Y LÍMITES */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 text-green-400 mb-2">
             <HardDrive className="w-5 h-5" />
@@ -261,38 +313,43 @@ export default function SettingsEditor({
               label="Retención de Historial"
               description="Tiempo que se guardan los análisis antes de eliminarse."
             >
-              <select className="bg-background border border-white/20 text-foreground text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5">
-                <option>90 Días</option>
-                <option>1 Año</option>
-              </select>
+              <div className="relative">
+                <select className="appearance-none bg-background border border-foreground/20 text-foreground text-sm rounded-lg block w-full pl-4 pr-10 py-2.5 cursor-pointer">
+                  <option>90 Días</option>
+                  <option>1 Año</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground pointer-events-none" />
+              </div>
             </SettingCard>
 
             <SettingCard
               label="Tiempo Máximo de Análisis"
               description="Límite de duración para una sola sesión de escaneo."
             >
-              <select className="bg-background border border-white/20 text-foreground text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5">
-                <option>2 Minutos</option>
-                <option>5 Minutos</option>
-              </select>
+              <div className="relative">
+                <select className="appearance-none bg-background border border-foreground/20 text-foreground text-sm rounded-lg block w-full pl-4 pr-10 py-2.5 cursor-pointer">
+                  <option>2 Minutos</option>
+                  <option>5 Minutos</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground pointer-events-none" />
+              </div>
             </SettingCard>
           </div>
         </section>
 
-        {/* 4. MENSAJERÍA */}
+        {/* MENSAJERÍA */}
         <section className="space-y-4 lg:col-span-2">
-          {/* ... (Se mantiene igual que el diseño anterior) ... */}
           <div className="flex items-center gap-2 text-yellow-400 mb-2">
             <Bell className="w-5 h-5" />
             <h2 className="text-lg font-semibold text-foreground">
               4. Mensajería Global
             </h2>
           </div>
-          <div className="group relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-6 transition-all hover:border-white/20">
+          <div className="group relative overflow-hidden rounded-xl border border-foreground/10 bg-foreground/5 p-6 transition-all hover:border-foreground/20">
             <textarea
               rows={3}
               placeholder="Escribe un mensaje..."
-              className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm text-foreground resize-none"
+              className="w-full bg-background/50 border border-foreground/10 rounded-lg p-3 text-sm text-foreground resize-none"
             />
           </div>
         </section>

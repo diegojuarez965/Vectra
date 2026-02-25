@@ -1,20 +1,7 @@
 import { NormalizedLandmark } from "@mediapipe/tasks-vision";
+import type { ExerciseFeedback, Phase } from "../lib/definitions";
 
 // Fase del ejercicio
-type Phase = "CONCENTRIC" | "ECCENTRIC" | "NEUTRAL";
-
-export interface ExerciseFeedback {
-  errorType: "TECHNICAL" | "POSITIONING" | "SYSTEM";
-  exercise?: "BICEP_CURL";
-  error?:
-    | "ELBOW_BACK"
-    | "ELBOW_FRONT"
-    | "FORWARD_BACK"
-    | "FORWARD_FRONT"
-    | "NO_ROM_ECCENTRIC"
-    | "NO_ROM_CONCENTRIC";
-  message: string;
-}
 
 const LANDMARKS = {
   NOSE: 0,
@@ -78,8 +65,8 @@ export class BicepCurlAnalyzer {
   public repetitionCounter = 0; // Contador de repeticiones
   private minAngleReached: number = 180; // Máxima flexión (arriba)
   private maxAngleReached: number = 0; // Máxima extensión (abajo)
-  private readonly ROM_EXTENSION_TARGET = 150; // El brazo debe bajar hasta al menos 150°
-  private readonly ROM_FLEXION_TARGET = 70; // El brazo debe subir hasta menos de 70°
+  private readonly ROM_EXTENSION_TARGET = 140; // El brazo debe bajar hasta al menos 130°
+  private readonly ROM_FLEXION_TARGET = 75; // El brazo debe subir hasta al menos 75°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
@@ -94,9 +81,8 @@ export class BicepCurlAnalyzer {
   ): ExerciseFeedback | null => {
     // Calcular el ángulo de separación entre la cadera y el codo respecto al hombro
     const separationAngle = calculateAngle(hip, shoulder, elbow, width, height);
-    const DRIFT_THRESHOLD = 20;
-
-    // Si el ángulo de separación es mayor a 20 grados, consideramos que el codo se está moviendo fuera del plano ideal
+    const DRIFT_THRESHOLD = 22.5;
+    // Si el ángulo de separación es mayor a 22.5 grados, consideramos que el codo se está moviendo fuera del plano ideal
     if (separationAngle > DRIFT_THRESHOLD) {
       const shoulderX = shoulder.x * width;
       const elbowX = elbow.x * width;

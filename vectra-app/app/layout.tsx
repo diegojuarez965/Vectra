@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "./components/Footer";
 
-import { getMaintenanceMode } from "@/app/lib/actions";
+import { getMaintenanceMode } from "@/app/lib/data";
 import { auth } from "@/auth";
 import MaintenancePage from "@/app/mantenimiento/page";
 

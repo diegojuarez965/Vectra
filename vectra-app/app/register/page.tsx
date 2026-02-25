@@ -24,23 +24,23 @@ export default function RegisterPage() {
         <h2 className="text-3xl font-bold text-foreground tracking-tight">
           Únete a Vectra
         </h2>
-        <p className="mt-2 text-sm text-white/60">
+        <p className="mt-2 text-sm text-foreground/80">
           Comienza tu análisis biomecánico hoy mismo
         </p>
-      </div>
+      </div>  
 
       {/* Tarjeta del Formulario */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-[#4a4a4a] py-8 px-4 shadow-2xl sm:rounded-xl sm:px-10 border border-white/5 backdrop-blur-sm">
+        <div className="bg-[#4a4a4a] py-8 px-4 shadow-2xl sm:rounded-xl sm:px-10 border border-foreground/5 backdrop-blur-sm">
           <RegisterForm />
 
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
+                <div className="w-full border-t border-foreground/10" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-[#4a4a4a] text-white/50">
+                <span className="px-2 bg-[#4a4a4a] text-foreground/80">
                   ¿Ya tienes una cuenta?
                 </span>
               </div>
@@ -49,7 +49,7 @@ export default function RegisterPage() {
             <div className="mt-6 text-center">
               <Link
                 href="/login"
-                className="font-bold text-primary hover:text-orange-400 transition-colors"
+                className="font-bold text-primary hover:text-primary/80 transition-colors"
               >
                 Iniciar sesión
               </Link>

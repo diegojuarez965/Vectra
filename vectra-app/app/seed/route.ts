@@ -75,6 +75,7 @@ async function seedFeedbacks() {
   `;
 }
 
+// Crea tabla de repeticiones
 async function seedRepetitions() {
   await sql`
     CREATE TABLE IF NOT EXISTS repetitions (

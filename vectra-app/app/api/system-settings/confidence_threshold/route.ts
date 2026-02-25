@@ -9,11 +9,13 @@ export async function GET() {
     const result =
       await sql`SELECT value FROM system_settings WHERE key = 'confidence_threshold'`;
 
+    // Si no hay configuración previa, por defecto es 0.5
     const data = result[0] || { value: "0.5" };
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    console.error("Error API GET confidence_threshold:", error);
     return NextResponse.json(
-      { error: "Error de base de datos" },
+      { error: "Error interno de base de datos" },
       { status: 500 },
     );
   }

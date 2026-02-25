@@ -1,4 +1,4 @@
-import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/actions";
+import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/data";
 import FileScanner from "@/app/components/users/FileScanner";
 import { FileVideo, Eye, FlaskConical } from "lucide-react";
 import { Metadata } from "next";
@@ -19,8 +19,8 @@ export default async function FileScannerPage() {
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground">
       {/* HEADER */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-white/5 rounded-xl border border-white/10 shadow-lg shadow-primary/5">
+        <div className="flex items-center gap-3 mb-4 border-b border-foreground/10 pb-6">
+          <div className="p-3 bg-foreground/5 rounded-xl border border-foreground/10 shadow-lg shadow-primary/5">
             <FileVideo className="w-6 h-6 text-primary" />
           </div>
           <div>
@@ -33,21 +33,21 @@ export default async function FileScannerPage() {
           </div>
         </div>
 
-        {/* INFO BOX: Diseño consistente pero informativo */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full relative overflow-hidden">
-          {/* Decoración de fondo sutil */}
+        {/* INFO BOX */}
+        <div className="bg-foreground/5 border border-foreground/10 rounded-2xl p-4 w-full relative overflow-hidden">
+          {/* Decoración de fondo */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
           <div className="flex gap-4 relative z-10">
             <div className="flex-1">
-              <p className="text-white/70 text-sm md:text-lg text-center mb-4 leading-relaxed">
+              <p className="text-foreground/80 text-sm md:text-lg text-center mb-4 leading-relaxed">
                 Sube tus videos para revisar errores frame a frame. Este modo es
                 exclusivamente para <strong>diagnóstico visual</strong>.
               </p>
 
               <div className="flex flex-col justify-center sm:flex-row gap-3">
                 {/* Badge 1: Sin Guardado */}
-                <div className="flex items-center text-center gap-2 text-sm md:text-lg text-white/60 bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+                <div className="flex items-center text-center gap-2 text-sm md:text-lg text-foreground/80 bg-black/20 px-3 py-2 rounded-lg border border-foreground/5">
                   <FlaskConical className="w-4 h-4 text-primary" />
                   <span>
                     Las métricas <strong>NO se guardan</strong> en tu historial.
@@ -55,7 +55,7 @@ export default async function FileScannerPage() {
                 </div>
 
                 {/* Badge 2: Visualización */}
-                <div className="flex items-center text-center gap-2 text-sm md:text-lg text-white/60 bg-black/20 px-3 py-2 rounded-lg border border-white/5">
+                <div className="flex items-center text-center gap-2 text-sm md:text-lg text-foreground/80 bg-black/20 px-3 py-2 rounded-lg border border-foreground/5">
                   <Eye className="w-4 h-4 text-primary" />
                   <span>
                     Solo para <strong>revisión y aprendizaje</strong>.

@@ -30,16 +30,16 @@ export default function LoginPage() {
         <h2 className="text-3xl font-bold text-foreground tracking-tight">
           ¡Bienvenido a Vectra!
         </h2>
-        <p className="mt-2 text-sm text-white/60">Accede a tu perfil</p>
+        <p className="mt-2 text-sm text-foreground/80">Accede a tu perfil</p>
       </div>
 
       {/* Tarjeta del Formulario */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-[#4a4a4a] py-8 px-4 shadow-2xl sm:rounded-xl sm:px-10 border border-white/5 backdrop-blur-sm">
+        <div className="bg-[#4a4a4a] py-8 px-4 shadow-2xl sm:rounded-xl sm:px-10 border border-background/5 backdrop-blur-sm">
           <Suspense
             fallback={
               <div className="flex justify-center py-10">
-                <div className="text-white/50 text-sm animate-pulse">
+                <div className="text-background/50 text-sm animate-pulse">
                   Cargando formulario...
                 </div>
               </div>
@@ -51,10 +51,10 @@ export default function LoginPage() {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
+                <div className="w-full border-t border-background/10" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-[#4a4a4a] text-white/50">
+                <span className="px-2 bg-[#4a4a4a] text-foreground/80">
                   ¿No tienes una cuenta?
                 </span>
               </div>
@@ -63,7 +63,7 @@ export default function LoginPage() {
             <div className="mt-6 text-center">
               <Link
                 href="/register"
-                className="font-bold text-primary hover:text-orange-400 transition-colors"
+                className="font-bold text-primary hover:text-primary/80 transition-colors"
               >
                 Crear cuenta gratis
               </Link>
