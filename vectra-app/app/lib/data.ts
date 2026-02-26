@@ -21,7 +21,7 @@ export async function getMaintenanceMode() {
     console.error("Error obteniendo modo mantenimiento:", error);
     return false;
   }
-} 
+}
 
 // Obtener estado de modo sin registro
 export async function getNoRegisterMode() {
@@ -87,7 +87,7 @@ export async function getSmoothingFactor() {
     return 0.5;
   }
 }
- 
+
 // Obtenemos repeticiones de un ejercicio para un usuario
 export async function getExerciseRepetitions(
   userID: string,
@@ -146,6 +146,41 @@ export async function getExerciseFeedbacks(
     return data;
   } catch (error) {
     console.error("Error obteniendo feedbacks:", error);
+    return null;
+  }
+}
+
+export async function getPaginatedHistory(
+  userID: string,
+  exerciseID: string,
+  page: number = 1,
+  limit: number = 3,
+  date?: string,
+) {
+  try {
+    const params = new URLSearchParams({
+      user_id: userID,
+      exercise: exerciseID,
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    if (date) params.append("date", date);
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || ""}/api/history?${params.toString()}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      },
+    );
+
+    if (!res.ok) return null;
+
+    return await res.json();
+  } catch (error) {
+    console.error("Error obteniendo historial paginado:", error);
     return null;
   }
 }

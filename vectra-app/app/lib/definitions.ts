@@ -48,6 +48,14 @@ export interface FeedbackHistory {
   historyError: Record<string, { count: number; error: ExerciseError }>;
 }
 
+// Sesión diaria
+export interface DailySession {
+  date: string;
+  exercise: Exercise;
+  repetitions: number;
+  feedbacks: { error: ExerciseError; count: number }[];
+}
+
 // Interface de estado de usuario
 export type UserState = {
   errors?: {

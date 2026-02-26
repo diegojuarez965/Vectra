@@ -84,7 +84,11 @@ export default function UserDashboard({ userID }: DashboardProps) {
       setFeedbacksError("");
 
       // Limpieza preventiva
-      setFeedbacksData({ total: 0, historyDate: {}, historyError: {} });
+      setFeedbacksData({
+        total: 0,
+        historyDate: {},
+        historyError: {},
+      });
 
       const feedbacks = await getExerciseFeedbacks(
         userID,
