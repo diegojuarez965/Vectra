@@ -51,6 +51,7 @@ export const { auth, signIn, signOut } = NextAuth({
 
         token.id = u.id;
         token.rol = u.rol;
+        token.active = u.active;
       }
       return token;
     },
@@ -60,6 +61,7 @@ export const { auth, signIn, signOut } = NextAuth({
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.rol = token.rol as "admin" | "user";
+        session.user.active = token.active as boolean;
       }
       return session;
     },

@@ -13,13 +13,21 @@ const BaseUserSchema = z.object({
   confirmPassword: z.string().min(1, "La confirmación es obligatoria"),
   rol: z.enum(["admin", "user"]),
 });
- 
+
 export const CreateUserSchema = BaseUserSchema.omit({
   id: true,
   rol: true,
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
+});
+
+export const EditUserSchema = z.object({
+  id: z.string().min(1, "El ID del usuario es obligatorio"),
+  name: z.string().min(1, "Por favor ingrese un nombre"),
+  email: z.string().email("Por favor ingrese un correo electrónico válido"),
+  rol: z.enum(["admin", "user"]),
+  active: z.boolean(),
 });
 
 const EXERCISES = Object.keys(EXERCISE_LABELS) as [string, ...string[]];

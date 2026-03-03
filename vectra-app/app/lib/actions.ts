@@ -4,9 +4,15 @@ import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { ExerciseFeedback, UserState } from "@/app/lib/definitions";
+import { headers } from "next/headers";
+import {
+  ExerciseFeedback,
+  UserState,
+  EditUserState,
+} from "@/app/lib/definitions";
 import {
   CreateUserSchema,
+  EditUserSchema,
   SubmitFeedbacksSchema,
   SubmitRepetitionsSchema,
   ForgotPasswordSchema,
@@ -60,6 +66,61 @@ export async function registerUser(
     };
   }
   redirect("/login");
+}
+
+// Editar usuario
+export async function updateUser(
+  prevState: EditUserState,
+  formData: FormData,
+): Promise<EditUserState> {
+  const activeValue = formData.get("active");
+  const isActive = activeValue === "on" || activeValue === "true";
+
+  const validatedFields = EditUserSchema.safeParse({
+    id: formData.get("id"),
+    name: formData.get("name"),
+    email: formData.get("email"),
+    rol: formData.get("rol"),
+    active: isActive,
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: {
+        ...validatedFields.error.flatten().fieldErrors,
+      },
+      message: "Faltan campos o hay errores de validación.",
+    };
+  }
+
+  const { id, name, email, rol, active } = validatedFields.data;
+
+  try {
+    const cookieHeader = (await headers()).get("cookie");
+    const res = await fetch(`${baseUrl}/api/users`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      },
+      body: JSON.stringify({ id, name, email, rol, active }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return {
+        message: data?.error || "Error al actualizar usuario.",
+      };
+    }
+  } catch (error) {
+    console.error("Error en el servidor o red:", error);
+    return {
+      message: "Error de red o servidor.",
+    };
+  }
+
+  revalidatePath("/vectra/admin/users");
+  return { message: "success" };
 }
 
 // Autenticación con credenciales
@@ -312,6 +373,44 @@ export async function updateSmoothingFactor(formData: FormData) {
     };
   } catch (error) {
     console.error("Error en updateSmoothingFactor:", error);
+    return { success: false, message: "Error de conexión con la API." };
+  }
+}
+
+// Actualizamos los días de retención del historial
+export async function updateRetentionDays(formData: FormData) {
+  const value = formData.get("retention_days") as string;
+  const numericValue = parseInt(value);
+
+  // Validamos que el valor sea un número y que sea 30, 60 o 90
+  if (
+    isNaN(numericValue) ||
+    (numericValue !== 30 && numericValue !== 60 && numericValue !== 90)
+  ) {
+    return { success: false, message: "El valor debe ser 30, 60 o 90." };
+  }
+
+  // Enviamos la solicitud
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/retention_days`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: numericValue }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { success: false, message: data?.error || "Error al actualizar." };
+    }
+
+    revalidatePath("/", "layout");
+
+    return {
+      success: true,
+      message: "Días de retención del historial guardados exitosamente.",
+    };
+  } catch (error) {
+    console.error("Error en updateRetentionDays:", error);
     return { success: false, message: "Error de conexión con la API." };
   }
 }

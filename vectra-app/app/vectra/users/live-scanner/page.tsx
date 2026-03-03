@@ -1,8 +1,10 @@
 import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/data";
 import LiveScanner from "@/app/components/users/LiveScanner";
+import LiveScannerSkeleton from "@/app/components/users/LiveScannerSkeleton";
 import { FileScan, History, TrendingUp } from "lucide-react";
 import { Metadata } from "next";
 import { auth } from "@/auth";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Analizar En Vivo",
@@ -10,7 +12,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function LiveScannerPage() {
+async function ScannerDataFetcher() {
   const [confidence, smoothingFactor] = await Promise.all([
     getConfidenceThreshold(),
     getSmoothingFactor(),
@@ -19,6 +21,18 @@ export default async function LiveScannerPage() {
   const session = await auth();
   const userID = session?.user?.id || undefined;
 
+  return (
+    <div className="w-full flex justify-center mt-6">
+      <LiveScanner
+        confidenceThreshold={confidence}
+        smoothingFactor={smoothingFactor}
+        userID={userID}
+      />
+    </div>
+  );
+}
+
+export default function LiveScannerPage() {
   return (
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground">
       {/* HEADER */}
@@ -68,12 +82,10 @@ export default async function LiveScannerPage() {
         </div>
       </div>
 
-      {/* LIVE SCANNER */}
-      <LiveScanner
-        confidenceThreshold={confidence}
-        smoothingFactor={smoothingFactor}
-        userID={userID}
-      />
+      {/* LIVE SCANNER DATA LOADER */}
+      <Suspense fallback={<LiveScannerSkeleton />}>
+        <ScannerDataFetcher />
+      </Suspense>
     </div>
   );
 }

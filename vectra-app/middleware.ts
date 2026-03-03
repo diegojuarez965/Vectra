@@ -15,8 +15,10 @@ export async function middleware(req: NextRequest) {
   const isOnAdmin = pathname.startsWith("/vectra/admin");
   const isOnUsers = pathname.startsWith("/vectra/users");
   const isOnLoginSuccess = pathname === "/login-success";
+  const isOnSuspendido = pathname === "/suspendido";
 
-  const requiresAuth = isOnAdmin || isOnUsers || isOnLoginSuccess;
+  const requiresAuth =
+    isOnAdmin || isOnUsers || isOnLoginSuccess || isOnSuspendido;
 
   // Redirección a login si no hay sesión en rutas protegidas
   if (!session && requiresAuth) {
@@ -26,7 +28,19 @@ export async function middleware(req: NextRequest) {
 
   if (!session) return NextResponse.next(); // acceso libre al resto
 
+  const active = session.user.active;
+  console.log("El usuario está activo: ", active);
   const role = session.user.rol;
+
+  if (!active && !isOnSuspendido) {
+    url.pathname = "/suspendido";
+    return NextResponse.redirect(url);
+  }
+
+  if (active && isOnSuspendido) {
+    url.pathname = role === "admin" ? "/vectra/admin" : "/vectra/users";
+    return NextResponse.redirect(url);
+  }
 
   // Redirección post-login según rol
   if (isOnLoginSuccess) {
@@ -52,6 +66,7 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/login-success",
+    "/suspendido",
     "/vectra/(admin|users)(/:path*)?",
     "/((?!api/|_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|firebase-messaging-sw\\.js|icons/|.*\\.png$).*)",
   ],

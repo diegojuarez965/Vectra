@@ -68,6 +68,27 @@ export async function getConfidenceThreshold() {
   }
 }
 
+// Obtener días de retención del historial
+export async function getRetentionDays() {
+  noStore();
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/retention_days`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return 30;
+
+    const data = await res.json();
+
+    return parseInt(data.value);
+  } catch (error) {
+    console.error("Error obteniendo días de retención:", error);
+    return 30;
+  }
+}
+
 // Obtener factor de suavizado
 export async function getSmoothingFactor() {
   noStore();
@@ -181,6 +202,40 @@ export async function getPaginatedHistory(
     return await res.json();
   } catch (error) {
     console.error("Error obteniendo historial paginado:", error);
+    return null;
+  }
+}
+
+// Obtener usuarios con paginación y búsqueda
+export async function getUsers(
+  page: number = 1,
+  query: string = "",
+  rol: string = "all",
+  status: string = "all",
+) {
+  noStore();
+  try {
+    const params = new URLSearchParams({ page: page.toString() });
+    if (query) {
+      params.append("query", query);
+    }
+    if (rol !== "all") {
+      params.append("rol", rol);
+    }
+    if (status !== "all") {
+      params.append("status", status);
+    }
+    const res = await fetch(`${baseUrl}/api/users?${params.toString()}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+
+    return await res.json();
+  } catch (error) {
+    console.error("Error obteniendo usuarios:", error);
     return null;
   }
 }

@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { Exercise, DailySession } from "@/app/lib/definitions";
 import { getPaginatedHistory } from "@/app/lib/data";
-import { Activity, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import FiltersBar from "./FiltersBar";
 import HistoryCard from "./HistoryCard";
 import Pagination from "../Pagination";
+import UserHistorySkeleton from "./UserHistorySkeleton";
 
 interface HistoryDashboardProps {
   userID: string;
@@ -82,10 +83,7 @@ export default function HistoryDashboard({ userID }: HistoryDashboardProps) {
 
       <div className="w-full">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-foreground/80">
-            <Activity className="w-8 h-8 animate-spin mb-4 text-primary" />
-            <p>Cargando registros...</p>
-          </div>
+          <UserHistorySkeleton />
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 text-red-400 bg-red-400/5 rounded-2xl border border-red-400/20">
             <AlertTriangle className="w-10 h-10 mb-2 opacity-50" />

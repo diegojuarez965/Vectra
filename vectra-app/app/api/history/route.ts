@@ -23,6 +23,8 @@ export async function GET(req: Request) {
     : sql`AND date >= NOW() - INTERVAL '7 days'`;
 
   try {
+    // Tiempo para mirar skeleton
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     // Obtenemos el total de días únicos para calcular las páginas
     const totalDaysResult = await sql`
       SELECT COUNT(DISTINCT date::DATE) as total

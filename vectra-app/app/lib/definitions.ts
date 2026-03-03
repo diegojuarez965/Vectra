@@ -25,6 +25,18 @@ export interface User {
   email: string;
   password: string;
   rol: "admin" | "user";
+  active: boolean;
+}
+
+// Interface de respuesta de usuarios
+export interface UsersResponse {
+  users: User[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalUsers: number;
+    usersPerPage: number;
+  };
 }
 
 // Feedback para el usuario
@@ -56,13 +68,25 @@ export interface DailySession {
   feedbacks: { error: ExerciseError; count: number }[];
 }
 
-// Interface de estado de usuario
+// Interface de estado de usuario para crear
 export type UserState = {
   errors?: {
     name?: string[];
     email?: string[];
     password?: string[];
     confirmPassword?: string[];
+  };
+  message?: string | null;
+};
+
+// Interface de estado de usuario para editar
+export type EditUserState = {
+  errors?: {
+    id?: string[];
+    name?: string[];
+    email?: string[];
+    rol?: string[];
+    active?: string[];
   };
   message?: string | null;
 };

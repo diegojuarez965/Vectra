@@ -9,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import RepetitionsChartSkeleton from "./RepetitionsChartSkeleton";
 
 // Interface de gráfica de repeticiones del dashboard de usuario
 interface RepetitionsChartProps {
@@ -30,9 +31,7 @@ export default function RepetitionsChart({
       </h3>
       <div className="h-62.5 w-full">
         {loading ? ( // Cargando
-          <div className="h-full w-full flex items-center justify-center text-foreground/80">
-            Cargando...
-          </div>
+          <RepetitionsChartSkeleton />
         ) : // Error obteniendo datos
         error ? (
           <div className="h-full w-full flex flex-col items-center justify-center text-red-400 gap-2">

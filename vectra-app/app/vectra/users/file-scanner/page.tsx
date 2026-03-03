@@ -1,7 +1,9 @@
 import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/data";
 import FileScanner from "@/app/components/users/FileScanner";
+import FileScannerSkeleton from "@/app/components/users/FileScannerSkeleton";
 import { FileVideo, Eye, FlaskConical } from "lucide-react";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Analizar Archivo",
@@ -9,12 +11,23 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function FileScannerPage() {
+async function ScannerDataFetcher() {
   const [confidence, smoothingFactor] = await Promise.all([
     getConfidenceThreshold(),
     getSmoothingFactor(),
   ]);
 
+  return (
+    <div className="w-full flex justify-center mt-6">
+      <FileScanner
+        confidenceThreshold={confidence}
+        smoothingFactor={smoothingFactor}
+      />
+    </div>
+  );
+}
+
+export default function FileScannerPage() {
   return (
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground">
       {/* HEADER */}
@@ -67,11 +80,10 @@ export default async function FileScannerPage() {
         </div>
       </div>
 
-      {/* FILE SCANNER */}
-      <FileScanner
-        confidenceThreshold={confidence}
-        smoothingFactor={smoothingFactor}
-      />
+      {/* FILE SCANNER DATA LOADER */}
+      <Suspense fallback={<FileScannerSkeleton />}>
+        <ScannerDataFetcher />
+      </Suspense>
     </div>
   );
 }

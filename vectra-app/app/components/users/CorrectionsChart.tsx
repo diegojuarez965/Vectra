@@ -9,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import CorrectionsChartSkeleton from "./CorrectionsChartSkeleton";
 
 // Interface de gráfica de correcciones del dashboard de usuario
 interface CorrectionsChartProps {
@@ -30,9 +31,7 @@ export default function CorrectionsChart({
       </h3>
       <div className="h-50 w-full">
         {loading ? ( // Cargando
-          <div className="h-full w-full flex items-center justify-center text-foreground/80">
-            Cargando...
-          </div>
+          <CorrectionsChartSkeleton />
         ) : // Error obteniendo datos
         error ? (
           <div className="h-full w-full flex flex-col items-center justify-center text-red-400 gap-2">

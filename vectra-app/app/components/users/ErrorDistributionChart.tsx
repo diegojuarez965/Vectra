@@ -1,6 +1,7 @@
 "use client";
 import { AlertTriangle } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import ErrorDistributionChartSkeleton from "./ErrorDistributionChartSkeleton";
 
 const COLORS = [
   "#ef4444",
@@ -34,9 +35,7 @@ export default function ErrorDistributionChart({
         {
           // Cargando
           loading ? (
-            <div className="flex-1 flex items-center justify-center text-foreground/80 min-h-50">
-              Cargando...
-            </div>
+            <ErrorDistributionChartSkeleton />
           ) : // Error obteniendo datos
           error ? (
             <div className="flex-1 flex flex-col items-center justify-center text-red-400 gap-2 min-h-50">

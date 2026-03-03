@@ -12,7 +12,8 @@ async function seedUsers() {
       name VARCHAR(255) NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
-      rol TEXT NOT NULL DEFAULT 'user'
+      rol TEXT NOT NULL DEFAULT 'user',
+      active BOOLEAN NOT NULL DEFAULT true
     );
   `;
 

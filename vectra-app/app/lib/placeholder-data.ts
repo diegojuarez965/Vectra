@@ -24,6 +24,10 @@ const system_settings = [
     key: "smoothing_factor",
     value: "0.5",
   },
+  {
+    key: "retention_days",
+    value: "30",
+  },
 ];
 
 export { users, system_settings };
