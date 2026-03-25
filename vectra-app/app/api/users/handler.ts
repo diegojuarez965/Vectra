@@ -68,6 +68,7 @@ export async function handlerGetUsers(req: Request) {
     const query = url.searchParams.get("query") || "";
     const rol = url.searchParams.get("rol") || "all";
     const status = url.searchParams.get("status") || "all";
+    const dateParam = url.searchParams.get("date");
     const usersPerPage = 6;
     const offset = (page - 1) * usersPerPage;
 
@@ -77,13 +78,17 @@ export async function handlerGetUsers(req: Request) {
     const filterRol = rol !== "all" ? sql`AND rol = ${rol}` : sql``;
     const filterActive =
       status !== "all" ? sql`AND active = ${status === "active"}` : sql``;
+    const filterDate = dateParam
+      ? sql`AND date >= ${dateParam}::timestamp`
+      : sql``;
 
     // Obtener usuarios filtrados
     const users = await sql<User[]>`
-      SELECT id, name, email, rol, active FROM users
+      SELECT id, name, email, rol, active, date FROM users
       WHERE (name ILIKE ${searchPattern} OR email ILIKE ${searchPattern})
       ${filterRol}
       ${filterActive}
+      ${filterDate}
       ORDER BY id ASC
       LIMIT ${usersPerPage} OFFSET ${offset}
     `;
@@ -94,6 +99,7 @@ export async function handlerGetUsers(req: Request) {
       WHERE (name ILIKE ${searchPattern} OR email ILIKE ${searchPattern})
       ${filterRol}
       ${filterActive}
+      ${filterDate}
     `;
 
     const totalUsers = countResult[0].count;

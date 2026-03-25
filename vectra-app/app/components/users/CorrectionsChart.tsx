@@ -65,6 +65,7 @@ export default function CorrectionsChart({
                 tick={{ fill: "#ededed", fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
+                allowDecimals={false}
               />
               <Tooltip
                 contentStyle={{

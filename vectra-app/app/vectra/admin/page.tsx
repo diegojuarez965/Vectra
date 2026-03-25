@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { auth } from "@/auth";
+import AdminDashboard from "@/app/components/admin/AdminDashboard";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -13,11 +14,11 @@ export default async function AdminPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Hola, <span className="text-primary">{userName}</span>
           </h1>
-          <p className="mt-1 text-white/60">
-            Visión general del sistema.
-          </p>
+          <p className="mt-1 text-foreground/80">Visión general del sistema.</p>
         </div>
       </div>
+
+      <AdminDashboard />
     </div>
   );
 }

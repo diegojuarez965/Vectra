@@ -89,6 +89,30 @@ export async function getRetentionDays() {
   }
 }
 
+// Obtener tiempo máximo de análisis
+export async function getMaxTimeAnalysis() {
+  noStore();
+  try {
+    const res = await fetch(
+      `${baseUrl}/api/system-settings/max_time_analysis`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      },
+    );
+
+    if (!res.ok) return 2;
+
+    const data = await res.json();
+
+    return parseInt(data.value);
+  } catch (error) {
+    console.error("Error obteniendo tiempo máximo de análisis:", error);
+    return 2;
+  }
+}
+
 // Obtener factor de suavizado
 export async function getSmoothingFactor() {
   noStore();
@@ -109,8 +133,28 @@ export async function getSmoothingFactor() {
   }
 }
 
-// Obtenemos repeticiones de un ejercicio para un usuario
-export async function getExerciseRepetitions(
+// Obtener la última vez que se ejecutó la limpieza
+export async function getLastCleanup() {
+  noStore();
+  try {
+    const res = await fetch(`${baseUrl}/api/system-settings/last_cleanup`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    return data.value ? new Date(data.value) : null;
+  } catch (error) {
+    console.error("Error obteniendo última limpieza:", error);
+    return null;
+  }
+}
+
+// Obtenemos datos de repeticiones de un ejercicio para un usuario
+export async function getUserExerciseRepetitions(
   userID: string,
   exerciseID: string,
   date?: string,
@@ -136,6 +180,101 @@ export async function getExerciseRepetitions(
     return data;
   } catch (error) {
     console.error("Error obteniendo repeticiones:", error);
+    return null;
+  }
+}
+
+// Obtenemos métricas de analisis
+export async function getAnalysisMetrics(exerciseID: string, date?: string) {
+  try {
+    const params = new URLSearchParams({
+      exercise: exerciseID,
+    });
+
+    if (date) params.append("date", date);
+
+    const res = await fetch(
+      `${baseUrl}/api/analysis-metrics?${params.toString()}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      },
+    );
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+
+    return data;
+  } catch (error) {
+    console.error("Error obteniendo métricas de análisis:", error);
+    return null;
+  }
+}
+
+// Obtenemos distribución de ejercicios
+export async function getExercisesDistribution(date?: string) {
+  try {
+    const params = new URLSearchParams();
+
+    if (date) params.append("date", date);
+
+    const res = await fetch(
+      `${baseUrl}/api/exercises-distribution?${params.toString()}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      },
+    );
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+
+    return data;
+  } catch (error) {
+    console.error("Error obteniendo distribución de ejercicios:", error);
+    return null;
+  }
+}
+
+// Obtenemos volumen de datos global
+export async function getDataVolume() {
+  try {
+    const res = await fetch(`${baseUrl}/api/data-volume`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error obteniendo volumen de datos:", error);
+    return null;
+  }
+}
+
+// Obtener los últimos usuarios registrados
+export async function getLatestUsers() {
+  noStore();
+  try {
+    const res = await fetch(`${baseUrl}/api/latest-users`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error obteniendo últimos usuarios:", error);
     return null;
   }
 }
@@ -212,6 +351,7 @@ export async function getUsers(
   query: string = "",
   rol: string = "all",
   status: string = "all",
+  date?: string,
 ) {
   noStore();
   try {
@@ -225,6 +365,9 @@ export async function getUsers(
     if (status !== "all") {
       params.append("status", status);
     }
+    if (date) {
+      params.append("date", date);
+    }
     const res = await fetch(`${baseUrl}/api/users?${params.toString()}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -236,6 +379,28 @@ export async function getUsers(
     return await res.json();
   } catch (error) {
     console.error("Error obteniendo usuarios:", error);
+    return null;
+  }
+}
+
+// Obtener métricas de usuarios
+export async function getUsersMetrics(date?: string) {
+  noStore();
+  try {
+    const params = new URLSearchParams();
+    if (date) params.append("date", date);
+    
+    const res = await fetch(`${baseUrl}/api/users-metrics?${params.toString()}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+
+    return await res.json();
+  } catch (error) {
+    console.error("Error obteniendo métricas de usuarios:", error);
     return null;
   }
 }

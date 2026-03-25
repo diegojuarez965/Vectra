@@ -415,6 +415,47 @@ export async function updateRetentionDays(formData: FormData) {
   }
 }
 
+// Actualizamos el tiempo máximo de análisis
+export async function updateMaxTimeAnalysis(formData: FormData) {
+  const value = formData.get("max_time_analysis") as string;
+  const numericValue = parseInt(value);
+
+  // Validamos que el valor sea un número y que sea 1, 2 o 3
+  if (
+    isNaN(numericValue) ||
+    (numericValue !== 1 && numericValue !== 2 && numericValue !== 3)
+  ) {
+    return { success: false, message: "El valor debe ser 1, 2 o 3." };
+  }
+
+  // Enviamos la solicitud
+  try {
+    const res = await fetch(
+      `${baseUrl}/api/system-settings/max_time_analysis`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: numericValue }),
+      },
+    );
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { success: false, message: data?.error || "Error al actualizar." };
+    }
+
+    revalidatePath("/", "layout");
+
+    return {
+      success: true,
+      message: "Tiempo máximo de análisis guardado exitosamente.",
+    };
+  } catch (error) {
+    console.error("Error en updateMaxTimeAnalysis:", error);
+    return { success: false, message: "Error de conexión con la API." };
+  }
+}
+
 // Enviamos los feedbacks
 export async function submitFeedbacks(
   feedbacks: ExerciseFeedback[],

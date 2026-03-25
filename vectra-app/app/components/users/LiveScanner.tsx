@@ -11,6 +11,7 @@ import {
   Play,
   Square,
   XCircle,
+  Timer,
 } from "lucide-react";
 import Scanner from "@/app/components/users/Scanner";
 import { ExerciseFeedback } from "@/app/lib/definitions";
@@ -22,6 +23,7 @@ import { submitFeedbacks, submitRepetitions } from "@/app/lib/actions";
 interface LiveScannerProps {
   confidenceThreshold: number;
   smoothingFactor: number;
+  maxTimeAnalysis: number;
   userID: string | undefined;
 }
 
@@ -30,6 +32,7 @@ const POSITIVE_MESSAGES = ["Excelente", "Muy bien", "Perfecto", "Bien hecho"];
 export default function LiveScanner({
   confidenceThreshold,
   smoothingFactor,
+  maxTimeAnalysis,
   userID,
 }: LiveScannerProps) {
   // Estado de control de escaneo
@@ -48,6 +51,9 @@ export default function LiveScanner({
   // Estado para las repeticiones
   const [repeticiones, setRepeticiones] = useState(0);
 
+  // Estados para el temporizador
+  const [isTimeUp, setIsTimeUp] = useState(false);
+
   // Estado para el Mute
   const [isMuted, setIsMuted] = useState(true);
 
@@ -58,6 +64,7 @@ export default function LiveScanner({
   const handleStart = () => {
     setRepeticiones(0);
     setCurrentFeedback({ errorType: "SYSTEM", message: "Cargando" });
+    setIsTimeUp(false);
     setIsScanning(true);
   };
 
@@ -72,6 +79,7 @@ export default function LiveScanner({
     setIsSaving(true);
     cancel();
     setIsScanning(false);
+    setIsTimeUp(false);
 
     const promises = [];
 
@@ -105,6 +113,7 @@ export default function LiveScanner({
     cancel(); // Cortar voz
     setRepeticiones(0);
     setIsScanning(false);
+    setIsTimeUp(false);
   };
 
   //Efecto para hacer pitido cuando cambian las repeticiones
@@ -116,6 +125,21 @@ export default function LiveScanner({
     }
   }, [repeticiones, isScanning, isMuted]);
 
+  // Efecto para el temporizador de análisis
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (isScanning && !isTimeUp) {
+      timeout = setTimeout(
+        () => {
+          setIsTimeUp(true);
+          cancel(); // Cortar voz
+        },
+        maxTimeAnalysis * 60 * 1000,
+      );
+    }
+    return () => clearTimeout(timeout);
+  }, [isScanning, maxTimeAnalysis, isTimeUp, cancel]);
+
   // Efecto para acumular feedbacks técnicos
   useEffect(() => {
     if (currentFeedback && currentFeedback.errorType === "TECHNICAL") {
@@ -125,8 +149,8 @@ export default function LiveScanner({
 
   // Efecto para hablar
   useEffect(() => {
-    // Si no está escaneando, no hablamos
-    if (!isScanning) return;
+    // Si no está escaneando o el tiempo terminó, no hablamos
+    if (!isScanning || isTimeUp) return;
 
     const triggerSpeach = () => {
       if (isMuted) return;
@@ -154,7 +178,7 @@ export default function LiveScanner({
     }, 10000);
 
     return () => clearInterval(intervalId);
-  }, [currentFeedback, isMuted, speak, isScanning]);
+  }, [currentFeedback, isMuted, speak, isScanning, isTimeUp]);
 
   // Efecto para cancelar voz al mutear
   useEffect(() => {
@@ -171,10 +195,19 @@ export default function LiveScanner({
           <h2 className="text-3xl font-bold text-foreground mb-2">
             Listo para Entrenar
           </h2>
-          <p className="text-foreground/80 mb-8">
+          <p className="text-foreground/80 mb-6">
             Asegúrate de tener buena iluminación y que tu cuerpo sea visible en
             la cámara.
           </p>
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center gap-2 bg-foreground/5 py-2 px-4 border border-foreground/10 rounded-xl w-max">
+              <Timer className="w-5 h-5 text-primary" />
+              <span className="text-sm font-medium text-foreground">
+                Tiempo máximo de análisis: {maxTimeAnalysis}{" "}
+                {maxTimeAnalysis === 1 ? "minuto" : "minutos"}
+              </span>
+            </div>
+          </div>
           <button
             onClick={handleStart}
             className="cursor-pointer w-full py-4 bg-primary hover:bg-primary/80 text-foreground font-bold rounded-xl transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(var(--primary),0.4)] flex items-center justify-center gap-3"
@@ -202,6 +235,60 @@ export default function LiveScanner({
             )}
           </div>
         )}
+      </div>
+    );
+  }
+
+  // PANTALLA DE TIEMPO COMPLETADO
+  if (isTimeUp) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center p-4 animate-in fade-in zoom-in duration-500">
+        <div className="bg-black/20 backdrop-blur-xl border border-foreground/10 p-8 md:p-12 rounded-3xl text-center max-w-lg w-full shadow-2xl">
+          <div className="mx-auto w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6 border border-primary/20 shadow-[0_0_20px_rgba(var(--primary),0.2)]">
+            <Timer className="w-8 h-8" />
+          </div>
+          <h2 className="text-3xl font-bold text-foreground mb-4">
+            ¡Tiempo Completado!
+          </h2>
+          <p className="text-foreground/80 mb-8">
+            Has alcanzado el tiempo máximo de análisis ({maxTimeAnalysis}{" "}
+            {maxTimeAnalysis === 1 ? "minuto" : "minutos"}). ¿Qué deseas hacer
+            con los resultados?
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={handleCancel}
+              className="cursor-pointer px-6 py-4 bg-foreground/5 hover:bg-foreground/10 text-foreground font-bold rounded-xl transition-all border border-foreground/10 flex items-center justify-center gap-2"
+            >
+              <XCircle className="w-5 h-5" />
+              Descartar
+            </button>
+            <button
+              onClick={handleStop}
+              disabled={isSaving}
+              className={`
+                cursor-pointer px-6 py-4 font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)] flex items-center justify-center gap-2
+                ${
+                  isSaving
+                    ? "bg-gray-500/50 text-gray-300 cursor-not-allowed"
+                    : "bg-primary hover:bg-primary/80 text-foreground hover:scale-105"
+                }
+              `}
+            >
+              {isSaving ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5 fill-current" />
+                  Guardar Resultados
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

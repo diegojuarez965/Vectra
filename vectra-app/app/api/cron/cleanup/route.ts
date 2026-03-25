@@ -49,6 +49,13 @@ export async function GET(req: Request) {
     const deletedFeedbacksCount = deletedFeedbacksResult.length;
     const deletedRepsCount = deletedRepsResult.length;
 
+    // Actualizamos el registro de última limpieza
+    await sql`
+      INSERT INTO system_settings (key, value)
+      VALUES ('last_cleanup', NOW()::text)
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+    `;
+
     console.log(
       `Cron ejecutado: ${deletedFeedbacksCount} feedbacks y ${deletedRepsCount} rutinas borradas (>${retentionDays} días viejas).`,
     );

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Exercise, DailySession } from "@/app/lib/definitions";
 import { getPaginatedHistory } from "@/app/lib/data";
 import { AlertTriangle } from "lucide-react";
-import FiltersBar from "./FiltersBar";
+import FiltersBar from "../FiltersBar";
 import HistoryCard from "./HistoryCard";
 import Pagination from "../Pagination";
 import UserHistorySkeleton from "./UserHistorySkeleton";

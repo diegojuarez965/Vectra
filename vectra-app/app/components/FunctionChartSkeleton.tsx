@@ -1,6 +1,6 @@
 "use client";
 
-export default function RepetitionsChartSkeleton() {
+export default function FunctionChartSkeleton() {
   return (
     <div className="h-full w-full flex flex-col animate-pulse">
       <div className="flex-1 flex gap-4 min-h-0">

@@ -1,4 +1,8 @@
-import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/data";
+import {
+  getConfidenceThreshold,
+  getSmoothingFactor,
+  getMaxTimeAnalysis,
+} from "@/app/lib/data";
 import LiveScanner from "@/app/components/users/LiveScanner";
 import LiveScannerSkeleton from "@/app/components/users/LiveScannerSkeleton";
 import { FileScan, History, TrendingUp } from "lucide-react";
@@ -13,9 +17,10 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 async function ScannerDataFetcher() {
-  const [confidence, smoothingFactor] = await Promise.all([
+  const [confidence, smoothingFactor, maxTimeAnalysis] = await Promise.all([
     getConfidenceThreshold(),
     getSmoothingFactor(),
+    getMaxTimeAnalysis(),
   ]);
 
   const session = await auth();
@@ -26,6 +31,7 @@ async function ScannerDataFetcher() {
       <LiveScanner
         confidenceThreshold={confidence}
         smoothingFactor={smoothingFactor}
+        maxTimeAnalysis={maxTimeAnalysis}
         userID={userID}
       />
     </div>

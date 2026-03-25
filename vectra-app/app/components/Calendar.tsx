@@ -13,7 +13,10 @@ import {
   isSameMonth,
   isSameDay,
   isAfter,
+  isBefore,
   isToday,
+  startOfDay,
+  subDays,
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -22,15 +25,20 @@ interface VectraCalendarProps {
   selected?: Date;
   onSelect: (date: Date) => void;
   onClose?: () => void;
+  retentionDays?: number;
 }
 
 export default function Calendar({
   selected,
   onSelect,
   onClose,
+  retentionDays,
 }: VectraCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date()); // Mes actual
-  const today = new Date(); // Fecha actual
+  const today = startOfDay(new Date()); // Fecha actual sin time
+
+  // Calcular la fecha mínima seleccionable basada en los días de retención
+  const minDate = retentionDays ? subDays(today, retentionDays) : undefined;
 
   // Generar los días a mostrar
   const daysInMonth = eachDayOfInterval({
@@ -46,8 +54,13 @@ export default function Calendar({
       {/* HEADER: Mes y Navegación */}
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          className="p-1 hover:bg-foreground/10 rounded-md text-foreground transition-colors"
+          onClick={() => {
+            if (!minDate || !isSameMonth(currentMonth, minDate)) {
+              setCurrentMonth(subMonths(currentMonth, 1));
+            }
+          }}
+          disabled={minDate ? isSameMonth(currentMonth, minDate) : false}
+          className="p-1 hover:bg-foreground/10 rounded-md text-foreground transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -87,7 +100,9 @@ export default function Calendar({
         {daysInMonth.map((day) => {
           const isSelected = selected && isSameDay(day, selected);
           const isCurrentMonth = isSameMonth(day, currentMonth);
-          const isDisabled = isAfter(day, today); // Deshabilitar futuro
+          const isFuture = isAfter(day, today); // Deshabilitar futuro
+          const isTooOld = minDate ? isBefore(day, minDate) : false; // Deshabilitar pasado lejano
+          const isDisabled = isFuture || isTooOld;
           const isDayToday = isToday(day);
 
           return (

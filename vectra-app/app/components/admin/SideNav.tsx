@@ -2,9 +2,12 @@ import Link from "next/link";
 import NavLinks from "@/app/components/admin/NavLinks";
 import Image from "next/image";
 import { PowerIcon } from "lucide-react";
-import { signOut } from "@/auth";
+import { signOut, auth } from "@/auth";
+import ProfileAvatar from "@/app/components/ProfileAvatar";
 
-export default function SideNav() {
+export default async function SideNav() {
+  const session = await auth();
+
   return (
     <div className="flex h-full flex-col px-3 py-4 md:px-4 md:py-6 bg-black md:border-r border-foreground/10">
       {/* Logo Section */}
@@ -28,7 +31,17 @@ export default function SideNav() {
         {/* NavLinks Section */}
         <NavLinks />
         <div className="hidden h-auto w-full grow rounded-md md:block bg-transparent"></div>
+        {session?.user && (
+          <div className="hidden md:block w-full border-t border-foreground/10 pt-2 mb-2 shrink-0">
+            <ProfileAvatar
+              userId={session.user.id}
+              userName={session.user.name || "Administrador"}
+              imageUrl={session.user.image}
+            />
+          </div>
+        )}
         <form
+          className="shrink-0"
           action={async () => {
             "use server";
             await signOut({ redirectTo: "/" });

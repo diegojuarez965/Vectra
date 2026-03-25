@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ScanLine, FileScan, ChevronRight } from "lucide-react";
 import { auth } from "@/auth";
 import UserDashboard from "@/app/components/users/UserDashboard";
+import { getRetentionDays } from "@/app/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ export default async function UsersPage() {
   const session = await auth();
   const userName = session?.user?.name || "Atleta";
   const userID = session?.user?.id || "";
+  const retentionDays = await getRetentionDays();
 
   return (
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground">
@@ -77,7 +79,7 @@ export default async function UsersPage() {
           Métricas de Rendimiento
         </h2>
       </div>
-      <UserDashboard userID={userID} />
+      <UserDashboard userID={userID} retentionDays={retentionDays} />
     </div>
   );
 }

@@ -26,6 +26,14 @@ export interface User {
   password: string;
   rol: "admin" | "user";
   active: boolean;
+  date?: string;
+  image_url?: string;
+}
+
+// Métricas de Usuarios
+export interface UserMetrics {
+  total: number;
+  history: { date: string; count: number }[];
 }
 
 // Interface de respuesta de usuarios
@@ -51,6 +59,14 @@ export interface ExerciseFeedback {
 export interface RepetitionHistory {
   total: number;
   history: Record<string, { count: number; date: string }>;
+}
+
+export interface AnalysisMetrics {
+  totalAnalysis: number;
+  totalUsersAnalysis: number;
+  analysisHistory?: { date: string; count: number }[];
+  usersAnalysisHistory?: { date: string; count: number }[];
+  technicalErrors?: { name: string; count: number }[];
 }
 
 // Historial de feedbacks

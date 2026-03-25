@@ -13,8 +13,9 @@ async function seedUsers() {
       email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
       rol TEXT NOT NULL DEFAULT 'user',
-      active BOOLEAN NOT NULL DEFAULT true
-    );
+      active BOOLEAN NOT NULL DEFAULT true,
+      date TIMESTAMP DEFAULT NOW(),
+      image_url VARCHAR(255)
   `;
 
   const insertedUsers = await Promise.all(

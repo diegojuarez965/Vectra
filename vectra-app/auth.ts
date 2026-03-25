@@ -19,7 +19,7 @@ async function getUser(email: string): Promise<User | undefined> {
   }
 }
 
-export const { auth, signIn, signOut } = NextAuth({
+export const { auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
@@ -44,7 +44,11 @@ export const { auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session?.user?.image) {
+        token.picture = session.user.image;
+      }
+
       // Se ejecuta al iniciar sesión
       if (user) {
         const u = user as User;
@@ -52,6 +56,7 @@ export const { auth, signIn, signOut } = NextAuth({
         token.id = u.id;
         token.rol = u.rol;
         token.active = u.active;
+        token.picture = u.image_url;
       }
       return token;
     },
@@ -62,6 +67,9 @@ export const { auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.rol = token.rol as "admin" | "user";
         session.user.active = token.active as boolean;
+        if (token.picture) {
+          session.user.image = token.picture as string;
+        }
       }
       return session;
     },

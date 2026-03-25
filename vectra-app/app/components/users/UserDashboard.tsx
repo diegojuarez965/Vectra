@@ -9,10 +9,13 @@ import {
   ERROR_LABELS,
   Exercise,
 } from "@/app/lib/definitions";
-import { getExerciseRepetitions, getExerciseFeedbacks } from "@/app/lib/data";
+import {
+  getUserExerciseRepetitions,
+  getExerciseFeedbacks,
+} from "@/app/lib/data";
 
 // Importamos los subcomponentes
-import FiltersBar from "./FiltersBar";
+import FiltersBar from "../FiltersBar";
 import StatsKPIs from "./StatsKPIs";
 import RepetitionsChart from "./RepetitionsChart";
 import ErrorDistributionChart from "./ErrorDistributionChart";
@@ -20,9 +23,13 @@ import CorrectionsChart from "./CorrectionsChart";
 
 interface DashboardProps {
   userID: string;
+  retentionDays: number;
 }
 
-export default function UserDashboard({ userID }: DashboardProps) {
+export default function UserDashboard({
+  userID,
+  retentionDays,
+}: DashboardProps) {
   // ESTADOS PRINCIPALES
   const [selectedExercise, setSelectedExercise] =
     useState<Exercise>("BICEP_CURL");
@@ -55,7 +62,7 @@ export default function UserDashboard({ userID }: DashboardProps) {
       // Limpieza preventiva
       setRepetitionsData({ total: 0, history: {} });
 
-      const repetitions = await getExerciseRepetitions(
+      const repetitions = await getUserExerciseRepetitions(
         userID,
         selectedExercise,
         date?.toISOString().split("T")[0],
@@ -140,12 +147,25 @@ export default function UserDashboard({ userID }: DashboardProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* AVISO DE RETENCIÓN */}
+      <div className="bg-foreground/5 border border-foreground/10 p-3 rounded-xl flex items-center gap-3">
+        <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+        <p className="text-sm font-medium text-foreground/80">
+          Guardando historial hasta{" "}
+          <span className="text-foreground tracking-wide font-bold">
+            {retentionDays} {retentionDays === 1 ? "día" : "días"}
+          </span>
+          . Registros anteriores son eliminados.
+        </p>
+      </div>
+
       {/* BARRA DE FILTROS */}
       <FiltersBar
         selectedExercise={selectedExercise}
         setSelectedExercise={setSelectedExercise}
         date={date}
         setDate={setDate}
+        retentionDays={retentionDays}
       />
 
       {/* KPIs */}

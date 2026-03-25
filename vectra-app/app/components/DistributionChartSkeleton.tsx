@@ -1,6 +1,6 @@
 "use client";
 
-export default function ErrorDistributionChartSkeleton() {
+export default function DistributionChartSkeleton() {
   return (
     <div className="flex-1 flex flex-col animate-pulse w-full">
       {/* Chart Skeleton */}

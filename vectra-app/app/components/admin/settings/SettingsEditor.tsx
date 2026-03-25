@@ -1,11 +1,4 @@
-import {
-  Sliders,
-  ShieldAlert,
-  HardDrive,
-  Bell,
-  ChevronDown,
-} from "lucide-react";
-import SettingCard from "@/app/components/admin/settings/SettingCard";
+import { Sliders, ShieldAlert, HardDrive, Bell } from "lucide-react";
 import { Suspense } from "react";
 import { SingleSettingSkeleton } from "./SingleSettingSkeleton";
 import ConfidenceThresholdWrapper from "./ConfidenceThresholdWrapper";
@@ -13,6 +6,7 @@ import SmoothingFactorWrapper from "./SmoothingFactorWrapper";
 import MaintenanceModeWrapper from "./MaintenanceModeWrapper";
 import NoRegisterModeWrapper from "./NoRegisterModeWrapper";
 import RetentionDaysWrapper from "./RetentionDaysWrapper";
+import MaxTimeAnalysisWrapper from "./MaxTimeAnalysisWrapper";
 
 export default function SettingsEditor() {
   return (
@@ -88,18 +82,10 @@ export default function SettingsEditor() {
               <RetentionDaysWrapper />
             </Suspense>
 
-            <SettingCard
-              label="Tiempo Máximo de Análisis"
-              description="Límite de duración para una sola sesión de escaneo."
-            >
-              <div className="relative">
-                <select className="appearance-none bg-background border border-foreground/20 text-foreground text-sm rounded-lg block w-full pl-4 pr-10 py-2.5 cursor-pointer">
-                  <option>2 Minutos</option>
-                  <option>5 Minutos</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground pointer-events-none" />
-              </div>
-            </SettingCard>
+            {/* Configurar el tiempo máximo de análisis */}
+            <Suspense fallback={<SingleSettingSkeleton />}>
+              <MaxTimeAnalysisWrapper />
+            </Suspense>
           </div>
         </section>
 

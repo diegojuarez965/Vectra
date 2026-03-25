@@ -1,5 +1,5 @@
 "use client";
-import { Activity, AlertTriangle } from "lucide-react";
+import { UserPlus, AlertTriangle, Calendar } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -11,25 +11,33 @@ import {
 } from "recharts";
 import FunctionChartSkeleton from "../FunctionChartSkeleton";
 
-// Interface de gráfica de repeticiones del dashboard de usuario
-interface RepetitionsChartProps {
-  data: { date: string; reps: number }[];
+// Interface de gráfica de usuarios
+interface RegisteredUsersChartProps {
+  data: { date: string; count: number }[];
   loading: boolean;
   error: string;
 }
 
-export default function RepetitionsChart({
+export default function RegisteredUsersChart({
   data,
   loading,
   error,
-}: RepetitionsChartProps) {
+}: RegisteredUsersChartProps) {
   return (
-    <div className="lg:col-span-2 bg-foreground/5 border border-foreground/10 rounded-2xl p-6">
-      <h3 className="text-foreground font-bold mb-6 flex items-center gap-2">
-        <Activity className="w-4 h-4 text-primary" />
-        Progreso de Carga
-      </h3>
-      <div className="h-62.5 w-full">
+    <div className="lg:col-span-1 bg-foreground/5 border border-foreground/10 rounded-2xl p-6 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-2 mb-6">
+        <h3 className="text-foreground font-bold flex items-center gap-2 m-0">
+          <UserPlus className="w-4 h-4 text-primary shrink-0" />
+          Evolución de Registros
+        </h3>
+        <div
+          className="flex items-center gap-1 text-[10px] uppercase tracking-wider bg-foreground/10 text-foreground/60 px-2 py-1 rounded-md shrink-0 border border-foreground/5 w-fit"
+          title="Filtro de Fecha"
+        >
+          <Calendar className="w-3 h-3" /> Fecha
+        </div>
+      </div>
+      <div className="h-64 w-full grow">
         {loading ? ( // Cargando
           <FunctionChartSkeleton />
         ) : // Error obteniendo datos
@@ -43,7 +51,7 @@ export default function RepetitionsChart({
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
               <defs>
-                <linearGradient id="colorReps" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#ff5722" stopOpacity={0.8} />
                   <stop offset="95%" stopColor="#ff5722" stopOpacity={0} />
                 </linearGradient>
@@ -77,11 +85,11 @@ export default function RepetitionsChart({
               />
               <Area
                 type="monotone"
-                dataKey="reps"
+                dataKey="count"
                 stroke="#ff5722"
                 strokeWidth={3}
                 fillOpacity={1}
-                fill="url(#colorReps)"
+                fill="url(#colorUsers)"
               />
             </AreaChart>
           </ResponsiveContainer>

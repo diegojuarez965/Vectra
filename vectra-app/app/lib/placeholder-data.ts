@@ -28,6 +28,10 @@ const system_settings = [
     key: "retention_days",
     value: "30",
   },
+  {
+    key: "max_time_analysis",
+    value: "1",
+  },
 ];
 
 export { users, system_settings };

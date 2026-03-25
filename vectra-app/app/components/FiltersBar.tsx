@@ -20,12 +20,14 @@ interface FiltersBarProps {
   setSelectedExercise: (ex: Exercise) => void;
   date: Date | undefined;
   setDate: (date: Date | undefined) => void;
+  retentionDays?: number;
 }
 export default function FiltersBar({
   selectedExercise,
   setSelectedExercise,
   date,
   setDate,
+  retentionDays,
 }: FiltersBarProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false); // State para abrir y cerrar el calendario
   const [isExerciseOpen, setIsExerciseOpen] = useState(false); // State para abrir y cerrar el selector de ejercicios
@@ -127,6 +129,7 @@ export default function FiltersBar({
               selected={date}
               onSelect={setDate}
               onClose={() => setIsCalendarOpen(false)}
+              retentionDays={retentionDays}
             />
           </div>
         )}

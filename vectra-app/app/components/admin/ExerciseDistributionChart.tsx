@@ -1,35 +1,43 @@
 "use client";
-import { AlertTriangle } from "lucide-react";
+import { Dumbbell, Calendar } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import DistributionChartSkeleton from "../DistributionChartSkeleton";
 
 const COLORS = [
-  "#ef4444",
-  "#f59e0b",
-  "#3b82f6",
-  "#10b981",
-  "#8b5cf6",
-  "#ec4899",
+  "#3b82f6", // Blue
+  "#f59e0b", // Amber
+  "#10b981", // Emerald
+  "#8b5cf6", // Violet
+  "#ef4444", // Red
+  "#ec4899", // Pink
 ];
 
-// Interface de gráfica de errores del dashboard de usuario
-interface ErrorDistributionChartProps {
+// Interface de gráfica de distribución de análisis
+interface ExerciseDistributionChartProps {
   data: { name: string; value: number }[];
   loading: boolean;
   error: string;
 }
 
-export default function ErrorDistributionChart({
+export default function ExerciseDistributionChart({
   data,
   loading,
   error,
-}: ErrorDistributionChartProps) {
+}: ExerciseDistributionChartProps) {
   return (
     <div className="lg:col-span-1 bg-foreground/5 border border-foreground/10 rounded-2xl p-6 flex flex-col h-auto min-h-87.5">
-      <h3 className="text-foreground font-bold mb-4 flex items-center gap-2 shrink-0">
-        <AlertTriangle className="w-4 h-4 text-primary" />
-        Tipos de Error
-      </h3>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-2 mb-4">
+        <h3 className="text-foreground font-bold flex items-center gap-2 m-0 shrink-0">
+          <Dumbbell className="w-4 h-4 text-primary shrink-0" />
+          Ejercicios Analizados
+        </h3>
+        <div
+          className="flex items-center gap-1 text-[10px] uppercase tracking-wider bg-foreground/10 text-foreground/60 px-2 py-1 rounded-md shrink-0 border border-foreground/5 w-fit"
+          title="Filtro de Fecha"
+        >
+          <Calendar className="w-3 h-3" /> Fecha
+        </div>
+      </div>
 
       <div className="flex-1 w-full flex flex-col">
         {
@@ -39,7 +47,7 @@ export default function ErrorDistributionChart({
           ) : // Error obteniendo datos
           error ? (
             <div className="flex-1 flex flex-col items-center justify-center text-red-400 gap-2 min-h-50">
-              <AlertTriangle className="w-8 h-8 opacity-50" />
+              <Dumbbell className="w-8 h-8 opacity-50" />
               <p className="text-sm text-center">{error}</p>
             </div>
           ) : // Hay datos
@@ -98,12 +106,9 @@ export default function ErrorDistributionChart({
               </div>
             </>
           ) : (
-            // Sin errores
+            // Sin datos
             <div className="flex-1 flex flex-col items-center justify-center text-foreground/80 min-h-50">
-              <p className="text-2xl text-center">¡Técnica perfecta!</p>
-              <p className="text-2xl mt-1 opacity-50 text-center">
-                No hay errores registrados.
-              </p>
+              <p className="text-2xl text-center">Sin datos</p>
             </div>
           )
         }

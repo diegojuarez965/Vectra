@@ -4,7 +4,7 @@ import { SubmitRepetitionsSchema } from "@/app/lib/schemas";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
-// Obtenemos el historial de repeticiones
+// Obtenemos repeticiones de la base de datos
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const user_id = searchParams.get("user_id");
