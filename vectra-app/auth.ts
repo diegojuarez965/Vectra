@@ -26,7 +26,15 @@ export const { auth, signIn, signOut, unstable_update } = NextAuth({
       async authorize(credentials) {
         // Validar credenciales
         const parsedCredentials = z
-          .object({ email: z.string().email(), password: z.string().min(6) })
+          .object({
+            email: z.string().email(),
+            password: z
+              .string()
+              .min(8)
+              .regex(/[A-Z]/)
+              .regex(/[a-z]/)
+              .regex(/[0-9]/),
+          })
           .safeParse(credentials);
 
         if (parsedCredentials.success) {

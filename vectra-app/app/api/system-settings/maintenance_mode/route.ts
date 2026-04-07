@@ -15,6 +15,12 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error) {
+    const err = error as Error & { code?: string };
+    if (err.code === "42P01") {
+      // 42P01 = undefined_table (la tabla system_settings aún no existe)
+      return NextResponse.json({ value: "false" });
+    }
+
     console.error("Error API GET maintenance_mode:", error);
     return NextResponse.json(
       { error: "Error interno de base de datos" },

@@ -30,7 +30,7 @@ export default function ResetPasswordForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Manejo del envío 
+  // Manejo del envío
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");

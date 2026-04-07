@@ -24,7 +24,10 @@ export default function RegisterForm() {
       {/* CAMPO NOMBRE */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <label htmlFor="name" className="text-sm font-medium text-foreground/80">
+          <label
+            htmlFor="name"
+            className="text-sm font-medium text-foreground/80"
+          >
             Nombre Completo
           </label>
         </div>
@@ -48,7 +51,10 @@ export default function RegisterForm() {
       {/* CAMPO EMAIL */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <label htmlFor="email" className="text-sm font-medium text-foreground/80">
+          <label
+            htmlFor="email"
+            className="text-sm font-medium text-foreground/80"
+          >
             Correo Electrónico
           </label>
         </div>
@@ -105,7 +111,9 @@ export default function RegisterForm() {
           </button>
         </div>
         {state.errors?.password && (
-          <p className="text-sm text-red-400 mt-1">{state.errors.password}</p>
+          <p className="text-sm text-red-400 mt-1 whitespace-pre-line">
+            {state.errors.password}
+          </p>
         )}
       </div>
 

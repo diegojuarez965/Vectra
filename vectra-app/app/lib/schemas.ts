@@ -9,7 +9,10 @@ const BaseUserSchema = z.object({
   email: z.string().email("Por favor ingrese un correo electrónico válido"),
   password: z
     .string()
-    .min(6, "Por favor ingrese una contraseña de al menos 6 caracteres"),
+    .min(8, "La contraseña debe tener al menos 8 caracteres\n")
+    .regex(/[A-Z]/, "Debe contener al menos una letra mayúscula\n")
+    .regex(/[a-z]/, "Debe contener al menos una letra minúscula\n")
+    .regex(/[0-9]/, "Debe contener al menos un número\n"),
   confirmPassword: z.string().min(1, "La confirmación es obligatoria"),
   rol: z.enum(["admin", "user"]),
 });
@@ -66,10 +69,12 @@ export const ResetPasswordSchema = z
       .string()
       .length(64, "Token inválido o corrupto")
       .regex(/^[0-9a-f]+$/i, "Formato de token inválido"),
-
     password: z
       .string()
-      .min(6, "La contraseña debe tener al menos 6 caracteres"),
+      .min(8, "La contraseña debe tener al menos 8 caracteres")
+      .regex(/[A-Z]/, "Debe contener al menos una letra mayúscula")
+      .regex(/[a-z]/, "Debe contener al menos una letra minúscula")
+      .regex(/[0-9]/, "Debe contener al menos un número"),
     confirmPassword: z.string().min(1, "La confirmación es obligatoria"),
   })
   .refine((data) => data.password === data.confirmPassword, {

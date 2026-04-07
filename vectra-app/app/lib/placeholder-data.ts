@@ -2,7 +2,7 @@ const users = [
   {
     name: "Admin",
     email: "admin@vectramail.com",
-    password: "123456",
+    password: "Password1234",
     rol: "admin",
   },
 ];

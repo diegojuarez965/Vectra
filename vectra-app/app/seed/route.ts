@@ -16,6 +16,7 @@ async function seedUsers() {
       active BOOLEAN NOT NULL DEFAULT true,
       date TIMESTAMP DEFAULT NOW(),
       image_url VARCHAR(255)
+    );
   `;
 
   const insertedUsers = await Promise.all(
@@ -24,7 +25,7 @@ async function seedUsers() {
       return sql`
         INSERT INTO users (name, email, password, rol)
         VALUES (${user.name}, ${user.email}, ${hashedPassword}, ${user.rol})
-        ON CONFLICT (id) DO NOTHING;
+        ON CONFLICT (email) DO NOTHING;
       `;
     }),
   );
