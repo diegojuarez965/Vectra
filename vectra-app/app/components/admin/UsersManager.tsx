@@ -12,11 +12,8 @@ import Search from "@/app/components/Search";
 import UserFilters from "@/app/components/admin/UserFilters";
 import EditUserModal from "@/app/components/admin/EditUserModal";
 
-export default function UsersManager({
-  currentUserId,
-}: {
-  currentUserId?: string;
-}) {
+export default function UsersManager() {
+  // Obtenemos los parámetros de la URL
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -26,13 +23,14 @@ export default function UsersManager({
   const currentRol = searchParams.get("rol") || "all";
   const currentStatus = searchParams.get("status") || "all";
 
-  const [usersData, setUsersData] = useState<UsersResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [usersData, setUsersData] = useState<UsersResponse | null>(null); // Estado para almacenar datos de los usuarios (Usuarios y paginación)
+  const [isLoading, setIsLoading] = useState(true); // Estado para indicar si se están cargando los usuarios
+  const [error, setError] = useState<string | null>(null); // Estado para almacenar errores
 
-  const [isPending, startTransition] = useTransition();
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isPending, startTransition] = useTransition(); // Estado para indicar si se está realizando una transición
+  const [editingUser, setEditingUser] = useState<User | null>(null); // Estado para indicar qué usuario se está editando
 
+  // Guardamos en memoria la función fetchUsers para evitar que se ejecute cada vez que se renderiza el componente
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -56,14 +54,17 @@ export default function UsersManager({
     }
   }, [currentPage, currentQuery, currentRol, currentStatus]);
 
+  // Usamos useEffect para cargar los usuarios cuando el componente se monta
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Función que maneja el cambio de página
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams);
     params.set("page", page.toString());
 
+    // Usamos startTransition para actualizar la URL sin bloquear la UI
     startTransition(() => {
       replace(`${pathname}?${params.toString()}`, { scroll: true });
     });
@@ -72,6 +73,7 @@ export default function UsersManager({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Función que maneja la edición de un usuario
   const handleEditSuccess = () => {
     setEditingUser(null);
     fetchUsers();
@@ -279,7 +281,6 @@ export default function UsersManager({
       {editingUser && (
         <EditUserModal
           user={editingUser}
-          currentUserId={currentUserId}
           onClose={() => setEditingUser(null)}
           onSuccess={handleEditSuccess}
         />

@@ -4,6 +4,7 @@ import { User } from "../../lib/definitions";
 import bcrypt from "bcryptjs";
 import { CreateUserSchema, EditUserSchema } from "@/app/lib/schemas";
 import { auth } from "@/auth";
+import { deleteImageFromS3 } from "@/app/lib/s3";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -62,6 +63,9 @@ export async function handlerCreateUser(req: Request) {
 // Handler para obtener usuarios con paginación
 export async function handlerGetUsers(req: Request) {
   try {
+    const session = await auth();
+    const currentUserId = session?.user?.id;
+
     // Obtener parámetros de la URL
     const url = new URL(req.url);
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
@@ -75,6 +79,9 @@ export async function handlerGetUsers(req: Request) {
     const searchPattern = query ? `%${query}%` : `%%`;
 
     // Filtros dinámicos con postgres.js
+    const filterUserId = currentUserId
+      ? sql`AND id != ${currentUserId}`
+      : sql``;
     const filterRol = rol !== "all" ? sql`AND rol = ${rol}` : sql``;
     const filterActive =
       status !== "all" ? sql`AND active = ${status === "active"}` : sql``;
@@ -84,8 +91,9 @@ export async function handlerGetUsers(req: Request) {
 
     // Obtener usuarios filtrados
     const users = await sql<User[]>`
-      SELECT id, name, email, rol, active, date FROM users
+      SELECT id, name, email, rol, active, date, image_url FROM users
       WHERE (name ILIKE ${searchPattern} OR email ILIKE ${searchPattern})
+      ${filterUserId}
       ${filterRol}
       ${filterActive}
       ${filterDate}
@@ -97,6 +105,7 @@ export async function handlerGetUsers(req: Request) {
     const countResult = await sql<{ count: number }[]>`
       SELECT COUNT(*) as count FROM users
       WHERE (name ILIKE ${searchPattern} OR email ILIKE ${searchPattern})
+      ${filterUserId}
       ${filterRol}
       ${filterActive}
       ${filterDate}
@@ -129,10 +138,36 @@ export async function handlerGetUsers(req: Request) {
 // Handler para actualizar un usuario
 export async function handlerUpdateUser(req: Request) {
   try {
-    const body = await req.json();
+    // Verificamos que el usuario sea admin
+    const session = await auth();
+    const sessionRol = session?.user?.rol;
+    if (sessionRol !== "admin") {
+      return NextResponse.json(
+        { error: "No tienes permiso para actualizar usuarios" },
+        { status: 403 },
+      );
+    }
+
+    // Obtenemos los datos del formulario
+    const formData = await req.formData();
+    const rawId = formData.get("id");
+    const rawName = formData.get("name");
+    const rawEmail = formData.get("email");
+    const rawRol = formData.get("rol");
+    const rawActive = formData.get("active");
+    const activeBool = rawActive === "true";
+    const rawImageDelete = formData.get("imageDelete");
+    const imageDeleteBool = rawImageDelete === "true";
 
     // VALIDACIÓN CON ZOD
-    const validatedData = EditUserSchema.safeParse(body);
+    const validatedData = EditUserSchema.safeParse({
+      id: rawId,
+      name: rawName,
+      email: rawEmail,
+      rol: rawRol,
+      active: activeBool,
+      imageDelete: imageDeleteBool,
+    });
 
     if (!validatedData.success) {
       return NextResponse.json(
@@ -144,39 +179,9 @@ export async function handlerUpdateUser(req: Request) {
       );
     }
 
-    const { id, name, email, rol, active } = validatedData.data;
+    const { id, name, email, rol, active, imageDelete } = validatedData.data;
 
-    const session = await auth();
-    const currentUserId = session?.user?.id;
-
-    console.log("currentUserId", currentUserId);
-    console.log("id", id);
-
-    // 1. Prohibir autodegradación
-    if (String(currentUserId) === String(id)) {
-      const currentUserRecord = await sql<
-        User[]
-      >`SELECT rol, active FROM users WHERE id = ${id}`;
-      if (currentUserRecord.length > 0) {
-        if (rol !== currentUserRecord[0].rol) {
-          return NextResponse.json(
-            { error: "No puedes cambiar tu propio rol" },
-            { status: 403 },
-          );
-        }
-        if (active !== currentUserRecord[0].active) {
-          return NextResponse.json(
-            {
-              error:
-                "No puedes suspender o cambiar el estado de tu propia cuenta",
-            },
-            { status: 403 },
-          );
-        }
-      }
-    }
-
-    // 2. Validación del Último Administrador
+    // Validación del Último Administrador
     if (rol !== "admin" || !active) {
       const userRecord = await sql<
         User[]
@@ -212,12 +217,34 @@ export async function handlerUpdateUser(req: Request) {
       );
     }
 
-    const result = await sql<User[]>`
-      UPDATE users 
-      SET name = ${name}, email = ${email}, rol = ${rol}, active = ${active}
-      WHERE id = ${id}
-      RETURNING id, name, email, rol, active
-    `;
+    // Si image delete es verdadero la eliminamos, sino actualizamos el resto
+    let result: User[];
+    if (imageDelete) {
+      const oldImageRecord = await sql<
+        User[]
+      >`SELECT image_url FROM users WHERE id = ${id}`;
+      const oldImageUrl =
+        oldImageRecord.length > 0 ? oldImageRecord[0].image_url : null;
+      if (oldImageUrl) {
+        deleteImageFromS3(oldImageUrl).catch((err) =>
+          console.error("Fallo borrando imagen antigua de S3", err),
+        );
+      }
+
+      result = await sql<User[]>`
+        UPDATE users 
+        SET name = ${name}, email = ${email}, rol = ${rol}, active = ${active}, image_url = NULL
+        WHERE id = ${id}
+        RETURNING id
+      `;
+    } else {
+      result = await sql<User[]>`
+        UPDATE users 
+        SET name = ${name}, email = ${email}, rol = ${rol}, active = ${active}
+        WHERE id = ${id}
+        RETURNING id
+      `;
+    }
 
     if (result.length === 0) {
       return NextResponse.json(

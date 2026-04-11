@@ -103,6 +103,17 @@ export type EditUserState = {
     email?: string[];
     rol?: string[];
     active?: string[];
+    imageDelete?: string[];
+  };
+  message?: string | null;
+};
+
+export type EditProfileState = {
+  errors?: {
+    id?: string[];
+    name?: string[];
+    email?: string[];
+    image?: string[];
   };
   message?: string | null;
 };

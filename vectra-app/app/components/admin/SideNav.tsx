@@ -34,9 +34,12 @@ export default async function SideNav() {
         {session?.user && (
           <div className="hidden md:block w-full border-t border-foreground/10 pt-2 mb-2 shrink-0">
             <ProfileAvatar
-              userId={session.user.id}
-              userName={session.user.name || "Administrador"}
-              imageUrl={session.user.image}
+              user={{
+                id: session.user.id,
+                name: session.user.name || "Administrador",
+                email: session.user.email,
+                image: session.user.image,
+              }}
             />
           </div>
         )}

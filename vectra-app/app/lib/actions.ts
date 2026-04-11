@@ -2,17 +2,19 @@
 
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
-import { signIn } from "@/auth";
+import { signIn, unstable_update } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import {
   ExerciseFeedback,
   UserState,
   EditUserState,
+  EditProfileState,
 } from "@/app/lib/definitions";
 import {
   CreateUserSchema,
   EditUserSchema,
+  EditProfileSchema,
   SubmitFeedbacksSchema,
   SubmitRepetitionsSchema,
   ForgotPasswordSchema,
@@ -73,15 +75,19 @@ export async function updateUser(
   prevState: EditUserState,
   formData: FormData,
 ): Promise<EditUserState> {
-  const activeValue = formData.get("active");
-  const isActive = activeValue === "on" || activeValue === "true";
+  const active = formData.get("active");
+  const isActive = active === "true";
+  const imageDeleteValue = formData.get("imageDelete");
+  const isImageDelete = imageDeleteValue === "true";
 
+  // Validamos los campos usando zod
   const validatedFields = EditUserSchema.safeParse({
     id: formData.get("id"),
     name: formData.get("name"),
     email: formData.get("email"),
     rol: formData.get("rol"),
     active: isActive,
+    imageDelete: isImageDelete,
   });
 
   if (!validatedFields.success) {
@@ -93,17 +99,15 @@ export async function updateUser(
     };
   }
 
-  const { id, name, email, rol, active } = validatedFields.data;
-
+  // Enviamos la solicitud
   try {
     const cookieHeader = (await headers()).get("cookie");
     const res = await fetch(`${baseUrl}/api/users`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
         ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
-      body: JSON.stringify({ id, name, email, rol, active }),
+      body: formData,
     });
 
     if (!res.ok) {
@@ -120,6 +124,83 @@ export async function updateUser(
   }
 
   revalidatePath("/vectra/admin/users");
+  return { message: "success" };
+}
+
+// Actualizar información de perfil propia
+export async function updateProfile(
+  prevState: EditProfileState,
+  formData: FormData,
+): Promise<EditProfileState> {
+  const file = formData.get("image") as File | null;
+
+  // Validamos los campos usando zod
+  const validatedFields = EditProfileSchema.safeParse({
+    id: formData.get("id"),
+    name: formData.get("name"),
+    email: formData.get("email"),
+  });
+
+  let imageError: string[] | undefined = undefined;
+
+  // Validamos la imagen
+  if (file && file.size > 0) {
+    if (!file.type.startsWith("image/")) {
+      imageError = ["El archivo debe ser una imagen."];
+    } else if (file.size > 5 * 1024 * 1024) {
+      imageError = ["La imagen no debe superar los 5MB."];
+    }
+  }
+
+  if (!validatedFields.success || imageError) {
+    return {
+      errors: {
+        ...(validatedFields.success
+          ? {}
+          : validatedFields.error.flatten().fieldErrors),
+        ...(imageError ? { image: imageError } : {}),
+      },
+      message: "Faltan campos o hay errores de validación.",
+    };
+  }
+
+  // Enviamos la solicitud
+  try {
+    const cookieHeader = (await headers()).get("cookie");
+    const res = await fetch(`${baseUrl}/api/profile`, {
+      method: "PUT",
+      headers: {
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return {
+        message: data?.error || "Error al actualizar perfil.",
+      };
+    }
+
+    // Al llegar la respuesta con los datos desde la API, actualizamos la sesión.
+    if (data.user) {
+      await unstable_update({
+        user: {
+          name: data.user.name,
+          email: data.user.email,
+          image: data.user.image_url,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Error en el servidor o red:", error);
+    return {
+      message: "Error de red o servidor.",
+    };
+  }
+
+  revalidatePath("/", "layout");
   return { message: "success" };
 }
 

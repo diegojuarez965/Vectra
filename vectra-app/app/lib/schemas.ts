@@ -29,8 +29,17 @@ export const EditUserSchema = z.object({
   id: z.string().min(1, "El ID del usuario es obligatorio"),
   name: z.string().min(1, "Por favor ingrese un nombre"),
   email: z.string().email("Por favor ingrese un correo electrónico válido"),
-  rol: z.enum(["admin", "user"]),
-  active: z.boolean(),
+  rol: z.enum(["admin", "user"], "El rol debe ser Administrador o Usuario"),
+  active: z.boolean("El estado de la cuenta debe ser Activo o Inactivo"),
+  imageDelete: z.boolean(
+    "La eliminación de la imagen debe ser Verdadero o Falso",
+  ),
+});
+
+export const EditProfileSchema = z.object({
+  id: z.string().min(1, "El ID del usuario es obligatorio"),
+  name: z.string().min(1, "Por favor ingrese un nombre"),
+  email: z.string().email("Por favor ingrese un correo electrónico válido"),
 });
 
 const EXERCISES = Object.keys(EXERCISE_LABELS) as [string, ...string[]];

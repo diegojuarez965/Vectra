@@ -53,8 +53,10 @@ export const { auth, signIn, signOut, unstable_update } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async jwt({ token, user, trigger, session }) {
-      if (trigger === "update" && session?.user?.image) {
-        token.picture = session.user.image;
+      if (trigger === "update" && session?.user) {
+        if (session.user.image !== undefined) token.picture = session.user.image;
+        if (session.user.name !== undefined) token.name = session.user.name;
+        if (session.user.email !== undefined) token.email = session.user.email;
       }
 
       // Se ejecuta al iniciar sesión
@@ -77,6 +79,12 @@ export const { auth, signIn, signOut, unstable_update } = NextAuth({
         session.user.active = token.active as boolean;
         if (token.picture) {
           session.user.image = token.picture as string;
+        }
+        if (token.name) {
+          session.user.name = token.name as string;
+        }
+        if (token.email) {
+          session.user.email = token.email as string;
         }
       }
       return session;
