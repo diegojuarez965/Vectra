@@ -24,6 +24,7 @@ export default function EditUserModal({
   );
 
   const [isActive, setIsActive] = useState(user.active); // Estado para indicar si el usuario está activo
+  const [isResetPassword, setIsResetPassword] = useState(false); // Estado para reinicio de contraseña
   const [isImageDelete, setIsImageDelete] = useState(false); // Estado para indicar si se debe eliminar la imagen
   const [isEnlarged, setIsEnlarged] = useState(false); // Estado para indicar si la imagen está ampliada
   const [selectedRol, setSelectedRol] = useState(user.rol); // Estado para indicar el rol seleccionado
@@ -355,6 +356,59 @@ export default function EditUserModal({
                 {state.errors?.active && (
                   <p className="text-sm text-red-400 mt-1">
                     {state.errors.active}
+                  </p>
+                )}
+              </div>
+
+              {/* Reinicio de Contraseña */}
+              <div className="space-y-1 border-t border-foreground/10 pt-4 mt-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-foreground/80 block">
+                        Reinicio de Contraseña
+                      </label>
+                    </div>
+                    <span className="text-xs text-foreground/80">
+                      {isResetPassword
+                        ? "Se restablecerá la contraseña del usuario"
+                        : "Mantener la contraseña actual"}
+                    </span>
+                  </div>
+                  <label
+                    className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-all duration-200 ease-in-out has-focus-visible:outline-2 has-focus-visible:outline-primary has-focus-visible:outline-offset-2 ${
+                      isPending
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer"
+                    } ${isResetPassword ? "bg-primary" : "bg-foreground/20"}`}
+                  >
+                    <input
+                      type="checkbox"
+                      name="resetPassword"
+                      value="true"
+                      className="sr-only peer "
+                      checked={isResetPassword}
+                      onChange={() => setIsResetPassword(!isResetPassword)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          setIsResetPassword((prev) => !prev);
+                        }
+                      }}
+                      disabled={isPending}
+                    />
+                    <span className="sr-only">Toggle de reinicio de contraseña</span>
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-foreground shadow ring-0 transition duration-200 ease-in-out ${
+                        isResetPassword ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </label>
+                </div>
+                {state.errors?.resetPassword && (
+                  <p className="text-sm text-red-400 mt-1">
+                    {state.errors.resetPassword}
                   </p>
                 )}
               </div>

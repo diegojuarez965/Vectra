@@ -32,7 +32,7 @@ export default async function SideNav() {
         <NavLinks />
         <div className="hidden h-auto w-full grow rounded-md md:block bg-transparent"></div>
         {session?.user && (
-          <div className="hidden md:block w-full border-t border-foreground/10 pt-2 mb-2 shrink-0">
+          <div className="flex items-center justify-center shrink-0 md:w-full md:border-t border-foreground/10 md:pt-2 md:mb-2">
             <ProfileAvatar
               user={{
                 id: session.user.id,

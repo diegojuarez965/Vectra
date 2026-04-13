@@ -23,9 +23,9 @@ export default function ProfileAvatar({
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center space-y-2 py-4">
+      <div className="flex flex-col items-center justify-center md:space-y-2 md:py-4">
         <div
-          className="relative w-24 h-24 rounded-full border-2 border-foreground/10 overflow-hidden cursor-pointer group transition-all duration-300 hover:border-primary"
+          className="relative shrink-0 w-12 h-12 md:w-24 md:h-24 rounded-full border-2 border-foreground/10 overflow-hidden cursor-pointer group transition-all duration-300 hover:border-primary"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
           onClick={() => setIsModalOpen(true)}
@@ -56,7 +56,7 @@ export default function ProfileAvatar({
           </div>
         </div>
 
-        <div className="text-center">
+        <div className="hidden md:block text-center">
           <p className="text-sm font-bold text-foreground truncate max-w-[150px]">
             {user.name}
           </p>

@@ -104,6 +104,7 @@ export type EditUserState = {
     rol?: string[];
     active?: string[];
     imageDelete?: string[];
+    resetPassword?: string[];
   };
   message?: string | null;
 };

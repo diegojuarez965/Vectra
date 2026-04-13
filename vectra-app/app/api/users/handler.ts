@@ -158,6 +158,8 @@ export async function handlerUpdateUser(req: Request) {
     const activeBool = rawActive === "true";
     const rawImageDelete = formData.get("imageDelete");
     const imageDeleteBool = rawImageDelete === "true";
+    const rawResetPassword = formData.get("resetPassword");
+    const resetPasswordBool = rawResetPassword === "true";
 
     // VALIDACIÓN CON ZOD
     const validatedData = EditUserSchema.safeParse({
@@ -167,6 +169,7 @@ export async function handlerUpdateUser(req: Request) {
       rol: rawRol,
       active: activeBool,
       imageDelete: imageDeleteBool,
+      resetPassword: resetPasswordBool,
     });
 
     if (!validatedData.success) {

@@ -79,6 +79,8 @@ export async function updateUser(
   const isActive = active === "true";
   const imageDeleteValue = formData.get("imageDelete");
   const isImageDelete = imageDeleteValue === "true";
+  const resetPasswordValue = formData.get("resetPassword");
+  const isResetPassword = resetPasswordValue === "true";
 
   // Validamos los campos usando zod
   const validatedFields = EditUserSchema.safeParse({
@@ -88,6 +90,7 @@ export async function updateUser(
     rol: formData.get("rol"),
     active: isActive,
     imageDelete: isImageDelete,
+    resetPassword: isResetPassword,
   });
 
   if (!validatedFields.success) {
@@ -99,9 +102,9 @@ export async function updateUser(
     };
   }
 
-  // Enviamos la solicitud
   try {
     const cookieHeader = (await headers()).get("cookie");
+    // Enviamos la solicitud para actualizar el usuario
     const res = await fetch(`${baseUrl}/api/users`, {
       method: "PUT",
       headers: {
@@ -115,6 +118,18 @@ export async function updateUser(
       return {
         message: data?.error || "Error al actualizar usuario.",
       };
+    }
+
+    // Enviamos la solicitud para reiniciar la contraseña
+    if (validatedFields.data.resetPassword) {
+      const resetResult = await sendPasswordResetEmail(
+        validatedFields.data.email,
+      );
+      if (!resetResult.success) {
+        return {
+          message: `Usuario actualizado, pero no se pudo enviar el correo de reinicio: ${resetResult.message}`,
+        };
+      }
     }
   } catch (error) {
     console.error("Error en el servidor o red:", error);

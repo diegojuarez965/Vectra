@@ -34,6 +34,9 @@ export const EditUserSchema = z.object({
   imageDelete: z.boolean(
     "La eliminación de la imagen debe ser Verdadero o Falso",
   ),
+  resetPassword: z.boolean(
+    "El reinicio de contraseña debe ser Verdadero o Falso",
+  ),
 });
 
 export const EditProfileSchema = z.object({
