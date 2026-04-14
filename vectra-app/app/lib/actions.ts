@@ -19,6 +19,7 @@ import {
   SubmitRepetitionsSchema,
   ForgotPasswordSchema,
   ResetPasswordSchema,
+  SubmitChatbotMessageSchema,
 } from "./schemas";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
@@ -646,6 +647,44 @@ export async function submitRepetitions(
     return { success: true, message: "Repeticiones enviadas correctamente" };
   } catch (error) {
     console.error("Error en submitRepetitions:", error);
+    return { success: false, message: "Error de conexión con la API." };
+  }
+}
+
+export async function submitChatbotMessage(message: string) {
+  // Validamos los parámetros
+  const validatedData = SubmitChatbotMessageSchema.safeParse({ message });
+
+  if (!validatedData.success) {
+    console.error(
+      "Datos inválidos en submitChatbotMessage:",
+      validatedData.error.flatten(),
+    );
+    return { success: false, message: "Parámetros inválidos o corruptos." };
+  }
+
+  const { message: safeMessage } = validatedData.data;
+
+  // Enviamos la solicitud
+  try {
+    const res = await fetch(`${baseUrl}/api/chatbox`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: safeMessage }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return {
+        success: false,
+        message: data?.error || "Error al enviar el mensaje",
+      };
+    }
+
+    const data = await res.json();
+    return { success: true, message: data };
+  } catch (error) {
+    console.error("Error en submitChatbotMessage:", error);
     return { success: false, message: "Error de conexión con la API." };
   }
 }

@@ -93,3 +93,8 @@ export const ResetPasswordSchema = z
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
   });
+
+// Esquema de envío de mensaje al chatbot
+export const SubmitChatbotMessageSchema = z.object({
+  message: z.string().min(1, "El mensaje no puede estar vacío"),
+});

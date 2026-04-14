@@ -3,6 +3,7 @@ import { ScanLine, FileScan, ChevronRight } from "lucide-react";
 import { auth } from "@/auth";
 import UserDashboard from "@/app/components/users/UserDashboard";
 import { getRetentionDays } from "@/app/lib/data";
+import Chatbox from "@/app/components/users/Chatbox";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,9 @@ export default async function UsersPage() {
   const session = await auth();
   const userName = session?.user?.name || "Atleta";
   const userID = session?.user?.id || "";
+  const avatar =
+    session?.user?.image ||
+    "https://cdn-icons-png.flaticon.com/512/149/149071.png";
   const retentionDays = await getRetentionDays();
 
   return (
@@ -80,6 +84,8 @@ export default async function UsersPage() {
         </h2>
       </div>
       <UserDashboard userID={userID} retentionDays={retentionDays} />
+
+      <Chatbox avatar={avatar} />
     </div>
   );
 }
