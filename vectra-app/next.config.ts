@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
   /* Permite que nextjs descargue imagenes de las siguientes fuentes */
   images: {
     remotePatterns: [

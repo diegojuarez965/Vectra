@@ -59,11 +59,8 @@ export default function EditProfileModal({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewImage(objectUrl);
     }
   };
 
@@ -113,6 +110,7 @@ export default function EditProfileModal({
                 alt="Vista previa"
                 fill
                 className="object-cover"
+                unoptimized={previewImage.startsWith("blob:")}
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col justify-center items-center transition-opacity duration-300">
                 <Camera className="w-6 h-6 text-foreground" />
