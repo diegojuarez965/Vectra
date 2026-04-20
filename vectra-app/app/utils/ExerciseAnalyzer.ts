@@ -13,6 +13,10 @@ const LANDMARKS = {
   RIGHT_WRIST: 16,
   LEFT_HIP: 23,
   RIGHT_HIP: 24,
+  LEFT_KNEE: 25,
+  RIGHT_KNEE: 26,
+  LEFT_ANKLE: 27,
+  RIGHT_ANKLE: 28,
 };
 
 // Visibilidad mínima para considerar una articulación como "confiable" en el análisis
@@ -55,6 +59,203 @@ const calculateAngle = (
 
   return angle;
 };
+
+export class SquatAnalyzer {
+  public repetitionCounter = 0; // Contador de repeticiones
+  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
+  private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
+  private excentricSuccess = false; // La fase excéntrica se completó correctamente
+  private concentricSuccess = false; // La fase concéntrica se completó correctamente
+  private prevAngle: number = 0; // Ángulo del frame anterior
+  private minAngleReached: number = 180; // Máxima extensión (arriba)
+  private maxAngleReached: number = 0; // Máxima flexión (abajo)
+  private readonly ROM_EXTENSION_TARGET = 150; // La cadera debe subir hasta al menos 150°
+  private readonly ROM_FLEXION_TARGET = 80; // La cadera debe bajar hasta al menos 80°
+  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
+  private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
+
+  // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
+  private checkROM(
+    hip: NormalizedLandmark,
+    knee: NormalizedLandmark,
+    ankle: NormalizedLandmark,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null {
+    // Calculamos el ángulo entre la cadera y el tobillo con vértice en la rodilla para determinar la flexión de la pierna
+    const currentAngle = calculateAngle(hip, knee, ankle, width, height);
+
+    let feedback: ExerciseFeedback | null = null;
+
+    // Modo bloqueo: gestión de errores activos
+    if (this.currentErrorFase !== null) {
+      if (this.currentErrorFase === "CONCENTRIC") {
+        // Error: No bajó suficiente.
+        // Salida: El usuario corrigió y bajó más (< 80).
+        if (currentAngle < this.ROM_FLEXION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.concentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "SQUAT",
+            error: "NO_ROM_CONCENTRIC",
+            message: "Baja más la cadera",
+          };
+        }
+      } else if (this.currentErrorFase === "ECCENTRIC") {
+        // Error: No subió suficiente.
+        // Salida: El usuario corrigió y subió más (> 150).
+        if (currentAngle > this.ROM_EXTENSION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.excentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "SQUAT",
+            error: "NO_ROM_ECCENTRIC",
+            message: "Sube más la cadera",
+          };
+        }
+      }
+
+      // Mientras estamos en error, seguimos actualizando el ángulo previo
+      this.prevAngle = currentAngle;
+      return feedback;
+    }
+
+    // Modo normal: detección de fases
+
+    // CASO A: Fase Excéntrica detectada
+    if (currentAngle > this.prevAngle + this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase concéntrica, validamos la amplitud y posibles errores antes de cambiar a excéntrica
+      if (this.currentPhase === "CONCENTRIC") {
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
+        const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
+        if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
+          // Validamos la bajada anterior
+          if (this.minAngleReached >= this.ROM_FLEXION_TARGET) {
+            feedback = {
+              errorType: "TECHNICAL",
+              exercise: "SQUAT",
+              error: "NO_ROM_CONCENTRIC",
+              message: "Baja más la cadera",
+            };
+            // Activamos el bloqueo
+            this.currentErrorFase = "CONCENTRIC";
+          } else {
+            // Éxito en la bajada
+            this.concentricSuccess = true;
+          }
+        }
+        this.maxAngleReached = currentAngle; // Actualizamos referencia
+      }
+
+      this.currentPhase = "ECCENTRIC"; // Actualizamos fase
+      this.maxAngleReached = Math.max(this.maxAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
+    }
+
+    // CASO B: Fase Concéntrica detectada
+    else if (currentAngle < this.prevAngle - this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase excéntrica, validamos la amplitud y posibles errores antes de cambiar a concéntrica
+      if (this.currentPhase === "ECCENTRIC") {
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
+        const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
+        if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
+          // Validamos la subida anterior
+          if (this.maxAngleReached <= this.ROM_EXTENSION_TARGET) {
+            feedback = {
+              errorType: "TECHNICAL",
+              exercise: "SQUAT",
+              error: "NO_ROM_ECCENTRIC",
+              message: "Sube más la cadera",
+            };
+            // Activamos el bloqueo
+            this.currentErrorFase = "ECCENTRIC";
+          } else {
+            // Éxito en la subida
+            this.excentricSuccess = true;
+          }
+        }
+        this.minAngleReached = currentAngle; // Actualizamos referencia
+      }
+
+      this.currentPhase = "CONCENTRIC"; // Actualizamos fase
+      this.minAngleReached = Math.min(this.minAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
+    }
+
+    return feedback;
+  }
+
+  public analyze(
+    landmarks: NormalizedLandmark[],
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null {
+    const nose = landmarks[LANDMARKS.NOSE];
+    const leftShoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
+    const rightShoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
+
+    // Verificamos que las articulaciones clave para determinar la orientación del usuario sean confiables
+    if (
+      !isReliable(nose) ||
+      !isReliable(leftShoulder) ||
+      !isReliable(rightShoulder)
+    ) {
+      return {
+        errorType: "POSITIONING",
+        message: "Ponte en frente de la cámara",
+      };
+    }
+
+    const noseX = nose.x * width;
+    const midShoulderX = ((leftShoulder.x + rightShoulder.x) / 2) * width;
+
+    // Determinamos la orientación del usuario (mirando a la izquierda o a la derecha) para analizar el brazo correcto y dar feedback adecuado
+    const isFacingLeft = noseX < midShoulderX;
+
+    let hip, knee, ankle;
+
+    if (isFacingLeft) {
+      hip = landmarks[LANDMARKS.LEFT_HIP];
+      knee = landmarks[LANDMARKS.LEFT_KNEE];
+      ankle = landmarks[LANDMARKS.LEFT_ANKLE];
+    } else {
+      hip = landmarks[LANDMARKS.RIGHT_HIP];
+      knee = landmarks[LANDMARKS.RIGHT_KNEE];
+      ankle = landmarks[LANDMARKS.RIGHT_ANKLE];
+    }
+
+    /* Verificamos que las articulaciones clave para el ejercicio sean confiables antes de realizar cualquier 
+    análisis para evitar dar feedback erróneo por una mala detección */
+    if (
+      !isReliable(hip) ||
+      !isReliable(knee) ||
+      !isReliable(ankle)
+    ) {
+      return {
+        errorType: "POSITIONING",
+        message: "Ponte de perfil",
+      };
+    }
+
+    const rom = this.checkROM(hip, knee, ankle, width, height);
+    if (rom != null) {
+      return rom;
+    }
+    // Si no hay errores activos y se completaron correctamente ambas fases, contamos una repetición
+    if (this.concentricSuccess && this.excentricSuccess) {
+      this.repetitionCounter += 1;
+      this.concentricSuccess = false;
+      this.excentricSuccess = false;
+    }
+    return null;
+  }
+}
 
 export class BicepCurlAnalyzer {
   private prevAngle: number = 0; // Ángulo del frame anterior

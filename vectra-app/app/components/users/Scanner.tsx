@@ -22,8 +22,8 @@ import {
   Volume2,
   Pause,
 } from "lucide-react";
-import { BicepCurlAnalyzer } from "@/app/utils/ExerciseAnalyzer";
-import { ExerciseFeedback } from "@/app/lib/definitions";
+import { BicepCurlAnalyzer, SquatAnalyzer } from "@/app/utils/ExerciseAnalyzer";
+import { Exercise, ExerciseFeedback } from "@/app/lib/definitions";
 
 // Conexiones del esqueleto relevantes
 const MY_CONNECTIONS = [
@@ -56,6 +56,7 @@ interface ScannerProps {
   smoothingFactor: number;
   onFeedbackChange: (feedback: ExerciseFeedback | null) => void;
   onRepetitionChange: (repeticiones: number) => void;
+  exercise: Exercise;
 }
 
 export default function Scanner({
@@ -65,6 +66,7 @@ export default function Scanner({
   smoothingFactor,
   onFeedbackChange,
   onRepetitionChange,
+  exercise,
 }: ScannerProps) {
   // REFS
   const containerRef = useRef<HTMLDivElement>(null); // Contenedor principal
@@ -74,7 +76,7 @@ export default function Scanner({
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null); // Modelo de IA
   const requestRef = useRef<number>(0); // Referencia para requestAnimationFrame
   const prevLandmarksRef = useRef<NormalizedLandmark[] | null>(null); // Últimos puntos detectados
-  const analyzerRef = useRef<BicepCurlAnalyzer | null>(null); // Referencia al analizador
+  const analyzerRef = useRef<BicepCurlAnalyzer | SquatAnalyzer | null>(null); // Referencia al analizador
   const lastFeedbackRef = useRef<ExerciseFeedback | null>(null); // Referencia al feedback anterior
   const feedbackCooldownRef = useRef<number>(0); // Rerencia al tiempo del último error para dar tiempo a corregir la técnica
   const COOLDOWN_MS = 5000; // 5 segundos de pausa
@@ -106,8 +108,17 @@ export default function Scanner({
 
   // Inicializar el analizador de ejercicio
   useEffect(() => {
-    analyzerRef.current = new BicepCurlAnalyzer();
-  }, []);
+    switch (exercise) {
+      case "BICEP_CURL":
+        analyzerRef.current = new BicepCurlAnalyzer();
+        break;
+      case "SQUAT":
+        analyzerRef.current = new SquatAnalyzer();
+        break;
+      default:
+        analyzerRef.current = new BicepCurlAnalyzer();
+    }
+  }, [exercise]);
 
   // Enviar feedback al padre cuando cambie
   useEffect(() => {
@@ -472,11 +483,10 @@ export default function Scanner({
       // Al hacer click en el contenedor, mostramos/ocultamos controles
       onClick={() => setShowControls((prev) => !prev)}
       className={`bg-black/20 overflow-hidden shadow-2xl group transition-all duration-300 border-none
-      ${
-        isFullscreen
+      ${isFullscreen
           ? "fixed inset-0 z-100 w-screen h-dvh rounded-none"
           : "relative w-full h-full rounded-xl"
-      }`}
+        }`}
       // Evita scroll accidental en móvil fullscreen
       style={{ touchAction: isFullscreen ? "none" : "auto" }}
     >

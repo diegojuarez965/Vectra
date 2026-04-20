@@ -3,6 +3,8 @@ import {
   getSmoothingFactor,
   getMaxTimeAnalysis,
 } from "@/app/lib/data";
+import { EXERCISE_LABELS, type Exercise } from "@/app/lib/definitions";
+import Link from "next/link";
 import LiveScanner from "@/app/components/users/LiveScanner";
 import LiveScannerSkeleton from "@/app/components/users/LiveScannerSkeleton";
 import { FileScan, History, TrendingUp } from "lucide-react";
@@ -16,7 +18,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-async function ScannerDataFetcher() {
+async function ScannerDataFetcher({ exercise }: { exercise: Exercise }) {
   const [confidence, smoothingFactor, maxTimeAnalysis] = await Promise.all([
     getConfidenceThreshold(),
     getSmoothingFactor(),
@@ -33,12 +35,22 @@ async function ScannerDataFetcher() {
         smoothingFactor={smoothingFactor}
         maxTimeAnalysis={maxTimeAnalysis}
         userID={userID}
+        exercise={exercise}
       />
     </div>
   );
 }
 
-export default function LiveScannerPage() {
+export default async function LiveScannerPage(props: {
+  searchParams?: Promise<{ exercise?: string }>;
+}) {
+  const params = await props.searchParams;
+  const exerciseQuery = params?.exercise;
+
+  const isValidExercise =
+    exerciseQuery &&
+    Object.keys(EXERCISE_LABELS).includes(exerciseQuery);
+
   return (
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground">
       {/* HEADER */}
@@ -88,10 +100,29 @@ export default function LiveScannerPage() {
         </div>
       </div>
 
-      {/* LIVE SCANNER DATA LOADER */}
-      <Suspense fallback={<LiveScannerSkeleton />}>
-        <ScannerDataFetcher />
-      </Suspense>
+      {/* LIVE SCANNER DATA LOADER / EXERCISE SELECTOR */}
+      {!isValidExercise ? (
+        <div className="mt-8 bg-foreground/5 border border-foreground/10 rounded-2xl p-6 w-full max-w-md mx-auto animate-in fade-in zoom-in duration-500">
+          <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
+            Selecciona un Ejercicio
+          </h2>
+          <div className="flex flex-col gap-4">
+            {Object.entries(EXERCISE_LABELS).map(([key, label]) => (
+              <Link
+                key={key}
+                href={`?exercise=${key}`}
+                className="w-full py-4 text-center bg-primary hover:bg-primary/80 text-foreground font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(var(--primary),0.2)] hover:scale-105"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <Suspense fallback={<LiveScannerSkeleton />}>
+          <ScannerDataFetcher exercise={exerciseQuery as Exercise} />
+        </Suspense>
+      )}
     </div>
   );
 }
