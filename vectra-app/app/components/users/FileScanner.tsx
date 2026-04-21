@@ -12,12 +12,13 @@ import {
   VolumeX,
 } from "lucide-react";
 import Scanner from "@/app/components/users/Scanner";
-import { ExerciseFeedback } from "@/app/lib/definitions";
+import { ExerciseFeedback, type Exercise } from "@/app/lib/definitions";
 import { useTextToSpeech } from "@/app/utils/useTextToSpeech";
 
 interface FileScannerProps {
   confidenceThreshold: number;
   smoothingFactor: number;
+  exercise: Exercise;
 }
 
 const POSITIVE_MESSAGES = ["Excelente", "Muy bien", "Perfecto", "Bien hecho"];
@@ -25,6 +26,7 @@ const POSITIVE_MESSAGES = ["Excelente", "Muy bien", "Perfecto", "Bien hecho"];
 export default function FileScanner({
   confidenceThreshold,
   smoothingFactor,
+  exercise,
 }: FileScannerProps) {
   // Estado para el archivo de video
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export default function FileScanner({
         // Caso positivo
         textToSpeak =
           POSITIVE_MESSAGES[
-            Math.floor(Math.random() * POSITIVE_MESSAGES.length)
+          Math.floor(Math.random() * POSITIVE_MESSAGES.length)
           ];
       }
       speak(textToSpeak);
@@ -176,10 +178,9 @@ export default function FileScanner({
             relative group cursor-pointer flex flex-col items-center justify-center 
             w-full h-80 md:h-125 rounded-2xl md:rounded-3xl border-2 border-dashed transition-all duration-300
             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
-            ${
-              isDragging
-                ? "border-primary bg-primary/10 scale-[1.01]"
-                : "border-foreground/10 bg-black/20 hover:bg-black/30 hover:border-primary/50"
+            ${isDragging
+              ? "border-primary bg-primary/10 scale-[1.01]"
+              : "border-foreground/10 bg-black/20 hover:bg-black/30 hover:border-primary/50"
             }
           `}
         >
@@ -267,6 +268,7 @@ export default function FileScanner({
                 smoothingFactor={smoothingFactor}
                 onFeedbackChange={setCurrentFeedback}
                 onRepetitionChange={setRepeticiones}
+                exercise={exercise}
               />
             </div>
           </div>
@@ -280,13 +282,12 @@ export default function FileScanner({
                   <div
                     className={`
                     mx-auto w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 md:mb-4 border shadow-[0_0_20px_rgba(0,0,0,0.2)]
-                    ${
-                      currentFeedback.errorType === "SYSTEM"
+                    ${currentFeedback.errorType === "SYSTEM"
                         ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
                         : currentFeedback.errorType === "POSITIONING"
                           ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
                           : "bg-red-400/5 text-red-400 border-red-400/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                    }
+                      }
                   `}
                   >
                     <AlertCircle className="w-6 h-6 md:w-8 md:h-8" />
@@ -305,24 +306,22 @@ export default function FileScanner({
                   <div
                     className={`
                     border rounded-xl p-3 md:p-4 mt-2
-                    ${
-                      currentFeedback.errorType === "SYSTEM"
+                    ${currentFeedback.errorType === "SYSTEM"
                         ? "bg-blue-500/5 border-blue-500/10"
                         : currentFeedback.errorType === "POSITIONING"
                           ? "bg-yellow-500/5 border-yellow-500/10"
                           : "bg-red-400/5 border-red-400/20"
-                    }
+                      }
                   `}
                   >
                     <p
                       className={`text-xs md:text-sm font-medium 
-                      ${
-                        currentFeedback.errorType === "SYSTEM"
+                      ${currentFeedback.errorType === "SYSTEM"
                           ? "text-blue-200/90"
                           : currentFeedback.errorType === "POSITIONING"
                             ? "text-yellow-200/90"
                             : "text-red-400"
-                      }`}
+                        }`}
                     >
                       {currentFeedback.message}
                     </p>

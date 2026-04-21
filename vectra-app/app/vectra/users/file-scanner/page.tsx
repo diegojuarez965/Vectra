@@ -1,4 +1,6 @@
 import { getConfidenceThreshold, getSmoothingFactor } from "@/app/lib/data";
+import { EXERCISE_LABELS, type Exercise } from "@/app/lib/definitions";
+import Link from "next/link";
 import FileScanner from "@/app/components/users/FileScanner";
 import FileScannerSkeleton from "@/app/components/users/FileScannerSkeleton";
 import { FileVideo, Eye, FlaskConical } from "lucide-react";
@@ -11,7 +13,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-async function ScannerDataFetcher() {
+async function ScannerDataFetcher({ exercise }: { exercise: Exercise }) {
   const [confidence, smoothingFactor] = await Promise.all([
     getConfidenceThreshold(),
     getSmoothingFactor(),
@@ -22,12 +24,21 @@ async function ScannerDataFetcher() {
       <FileScanner
         confidenceThreshold={confidence}
         smoothingFactor={smoothingFactor}
+        exercise={exercise}
       />
     </div>
   );
 }
 
-export default function FileScannerPage() {
+export default async function FileScannerPage(props: {
+  searchParams?: Promise<{ exercise?: string }>;
+}) {
+  const params = await props.searchParams;
+  const exerciseQuery = params?.exercise;
+
+  const isValidExercise =
+    exerciseQuery &&
+    Object.keys(EXERCISE_LABELS).includes(exerciseQuery);
   return (
     <div className="h-full w-full overflow-y-auto bg-background p-4 md:p-8 text-foreground">
       {/* HEADER */}
@@ -80,10 +91,29 @@ export default function FileScannerPage() {
         </div>
       </div>
 
-      {/* FILE SCANNER DATA LOADER */}
-      <Suspense fallback={<FileScannerSkeleton />}>
-        <ScannerDataFetcher />
-      </Suspense>
+      {/* FILE SCANNER DATA LOADER / EXERCISE SELECTOR */}
+      {!isValidExercise ? (
+        <div className="mt-8 bg-foreground/5 border border-foreground/10 rounded-2xl p-6 w-full max-w-md mx-auto animate-in fade-in zoom-in duration-500">
+          <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
+            Selecciona un Ejercicio
+          </h2>
+          <div className="flex flex-col gap-4">
+            {Object.entries(EXERCISE_LABELS).map(([key, label]) => (
+              <Link
+                key={key}
+                href={`?exercise=${key}`}
+                className="w-full py-4 text-center bg-primary hover:bg-primary/80 text-foreground font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(var(--primary),0.2)] hover:scale-105"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <Suspense fallback={<FileScannerSkeleton />}>
+          <ScannerDataFetcher exercise={exerciseQuery as Exercise} />
+        </Suspense>
+      )}
     </div>
   );
 }
