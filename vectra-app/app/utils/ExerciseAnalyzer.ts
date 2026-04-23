@@ -70,7 +70,7 @@ export class SquatAnalyzer {
   private minAngleReached: number = 180; // Máxima extensión (arriba)
   private maxAngleReached: number = 0; // Máxima flexión (abajo)
   private readonly ROM_EXTENSION_TARGET = 150; // La cadera debe subir hasta al menos 150°
-  private readonly ROM_FLEXION_TARGET = 80; // La cadera debe bajar hasta al menos 80°
+  private readonly ROM_FLEXION_TARGET = 100; // La cadera debe bajar hasta al menos 100°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
@@ -91,7 +91,7 @@ export class SquatAnalyzer {
     if (this.currentErrorFase !== null) {
       if (this.currentErrorFase === "CONCENTRIC") {
         // Error: No bajó suficiente.
-        // Salida: El usuario corrigió y bajó más (< 80).
+        // Salida: El usuario corrigió y bajó más (< 90).
         if (currentAngle < this.ROM_FLEXION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.concentricSuccess = true;
@@ -191,6 +191,98 @@ export class SquatAnalyzer {
     return feedback;
   }
 
+  // Método para analizar la posición de la rodilla y detectar si hay valgo
+  private checkValgo(
+    hip: NormalizedLandmark,
+    knee: NormalizedLandmark,
+    ankle: NormalizedLandmark,
+    isFacingLeft: boolean,
+  ): ExerciseFeedback | null {
+    let feedback: ExerciseFeedback | null = null;
+
+    // Convertimos las coordenadas de las articulaciones a píxeles para trabajar con valores absolutos
+    const hipX = hip.x;
+    const hipY = hip.y;
+    const kneeX = knee.x;
+    const kneeY = knee.y;
+    const ankleX = ankle.x;
+    const ankleY = ankle.y;
+
+    // Producto vectorial entre el vector cadera->tobillo y el vector cadera->rodilla
+    const crossProduct = (ankleX - hipX) * (kneeY - hipY) - (ankleY - hipY) * (kneeX - hipX);
+    const umbral = 0.02
+    if (isFacingLeft) {
+      if (crossProduct < -umbral) {
+        feedback = {
+          errorType: "TECHNICAL",
+          exercise: "SQUAT",
+          error: "KNEES_VALGUS",
+          message: "Manten las rodillas alineadas",
+        };
+      }
+    } else {
+      if (crossProduct > umbral) {
+        feedback = {
+          errorType: "TECHNICAL",
+          exercise: "SQUAT",
+          error: "KNEES_VALGUS",
+          message: "Manten las rodillas alineadas",
+        };
+      }
+    }
+    return feedback;
+  }
+
+  // Método para analizar el balanceo del cuerpo y detectar si se está balanceando hacia adelante
+  private checkForwardFront = (
+    hip: NormalizedLandmark,
+    shoulder: NormalizedLandmark,
+    isFacingLeft: boolean,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null => {
+    const vertical: NormalizedLandmark = {
+      x: shoulder.x,
+      y: 0.0,
+      z: 0.0,
+      visibility: 1.0,
+    };
+
+    // Calcular el ángulo de separación entre la vertical y la cadera respecto al hombro
+    const separationAngle = calculateAngle(
+      vertical,
+      shoulder,
+      hip,
+      width,
+      height,
+    );
+    const DRIFT_THRESHOLD = 120.0;
+
+    // Si el ángulo de separación es menor a 120 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
+    if (separationAngle < DRIFT_THRESHOLD) {
+      const shoulderX = shoulder.x * width;
+      const hipX = hip.x * width;
+
+      let frontBalanced = false;
+
+      if (isFacingLeft) {
+        frontBalanced = hipX > shoulderX; // Si el usuario mira a la izquierda, el balanceo hacia adelante es cuando la coordenada X de la cadera es mayor que la del hombro
+      } else {
+        frontBalanced = hipX < shoulderX; // Si el usuario mira a la derecha, el balanceo hacia adelante es cuando la coordenada X de la cadera es menor que la del hombro
+      }
+
+      if (frontBalanced) {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "SQUAT",
+          error: "FORWARD_FRONT",
+          message: "No te balancees hacia adelante",
+        };
+      }
+    }
+    return null;
+  };
+
   public analyze(
     landmarks: NormalizedLandmark[],
     width: number,
@@ -218,16 +310,18 @@ export class SquatAnalyzer {
     // Determinamos la orientación del usuario (mirando a la izquierda o a la derecha) para analizar el brazo correcto y dar feedback adecuado
     const isFacingLeft = noseX < midShoulderX;
 
-    let hip, knee, ankle;
+    let hip, knee, ankle, shoulder;
 
     if (isFacingLeft) {
       hip = landmarks[LANDMARKS.LEFT_HIP];
       knee = landmarks[LANDMARKS.LEFT_KNEE];
       ankle = landmarks[LANDMARKS.LEFT_ANKLE];
+      shoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
     } else {
       hip = landmarks[LANDMARKS.RIGHT_HIP];
       knee = landmarks[LANDMARKS.RIGHT_KNEE];
       ankle = landmarks[LANDMARKS.RIGHT_ANKLE];
+      shoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
     }
 
     /* Verificamos que las articulaciones clave para el ejercicio sean confiables antes de realizar cualquier 
@@ -235,7 +329,8 @@ export class SquatAnalyzer {
     if (
       !isReliable(hip) ||
       !isReliable(knee) ||
-      !isReliable(ankle)
+      !isReliable(ankle) ||
+      !isReliable(shoulder)
     ) {
       return {
         errorType: "POSITIONING",
@@ -243,6 +338,16 @@ export class SquatAnalyzer {
       };
     }
 
+    /*
+    const valgo = this.checkValgo(hip, knee, ankle, isFacingLeft);
+    if (valgo != null) {
+      return valgo;
+    }
+    */
+    const forwardFront = this.checkForwardFront(hip, shoulder, isFacingLeft, width, height);
+    if (forwardFront != null) {
+      return forwardFront;
+    }
     const rom = this.checkROM(hip, knee, ankle, width, height);
     if (rom != null) {
       return rom;
@@ -341,7 +446,7 @@ export class BicepCurlAnalyzer {
     );
     const DRIFT_THRESHOLD = 170.0;
 
-    // Si el ángulo de separación es mayor a 170 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
+    // Si el ángulo de separación es menor a 170 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
     if (separationAngle < DRIFT_THRESHOLD) {
       const shoulderX = shoulder.x * width;
       const hipX = hip.x * width;
