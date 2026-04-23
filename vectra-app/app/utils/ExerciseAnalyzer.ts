@@ -78,6 +78,12 @@ export class SquatAnalyzer {
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
+  // Variables para detectar inactividad
+  private lastHipY: number | null = null;
+  private lastMovementTime: number = 0;
+  private readonly INACTIVITY_TIMEOUT_MS = 3000; // 3 segundos sin movimiento
+  private readonly HIP_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
+
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
     currentAngle: number,
@@ -336,10 +342,26 @@ export class SquatAnalyzer {
       !isReliable(foot) ||
       !isReliable(shoulder)
     ) {
+      this.lastHipY = null; // Reiniciar inactividad si se pierde el tracking
       return {
         errorType: "POSITIONING",
         message: "Ponte de perfil",
       };
+    }
+    // Comprobación de inactividad (sin movimiento por x segundos)
+    if (this.lastHipY === null) {
+      this.lastHipY = hip.y;
+      this.lastMovementTime = Date.now();
+    } else {
+      if (Math.abs(hip.y - this.lastHipY) > this.HIP_MOVEMENT_THRESHOLD) {
+        this.lastHipY = hip.y;
+        this.lastMovementTime = Date.now();
+      } else if (Date.now() - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
+        return {
+          errorType: "POSITIONING",
+          message: "No se detecta movimiento",
+        };
+      }
     }
 
     const currentAngle = calculateAngle(hip, knee, ankle, width, height);
@@ -384,6 +406,12 @@ export class BicepCurlAnalyzer {
   private readonly ROM_FLEXION_TARGET = 75; // El brazo debe subir hasta al menos 75°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
+
+  // Variables para detectar inactividad
+  private lastWristY: number | null = null;
+  private lastMovementTime: number = 0;
+  private readonly INACTIVITY_TIMEOUT_MS = 3000; // 3 segundos sin movimiento
+  private readonly WRIST_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
@@ -610,6 +638,7 @@ export class BicepCurlAnalyzer {
     width: number,
     height: number,
   ): ExerciseFeedback | null {
+
     const nose = landmarks[LANDMARKS.NOSE];
     const leftShoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
     const rightShoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
@@ -654,10 +683,27 @@ export class BicepCurlAnalyzer {
       !isReliable(elbow) ||
       !isReliable(wrist)
     ) {
+      this.lastWristY = null; // Reiniciar inactividad si se pierde el tracking
       return {
         errorType: "POSITIONING",
         message: "Ponte de perfil",
       };
+    }
+
+    // Comprobación de inactividad (sin movimiento por x segundos)
+    if (this.lastWristY === null) {
+      this.lastWristY = wrist.y;
+      this.lastMovementTime = Date.now();
+    } else {
+      if (Math.abs(wrist.y - this.lastWristY) > this.WRIST_MOVEMENT_THRESHOLD) {
+        this.lastWristY = wrist.y;
+        this.lastMovementTime = Date.now();
+      } else if (Date.now() - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
+        return {
+          errorType: "POSITIONING",
+          message: "No se detecta movimiento",
+        };
+      }
     }
 
     /* Realizamos la comprobación de ROM, balanceo y posicion del codo en orden de prioridad para dar el 
