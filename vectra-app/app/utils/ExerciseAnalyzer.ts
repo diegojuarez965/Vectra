@@ -17,6 +17,10 @@ const LANDMARKS = {
   RIGHT_KNEE: 26,
   LEFT_ANKLE: 27,
   RIGHT_ANKLE: 28,
+  LEFT_HEEL: 29,
+  RIGHT_HEEL: 30,
+  LEFT_FOOT_INDEX: 31,
+  RIGHT_FOOT_INDEX: 32,
 };
 
 // Visibilidad mínima para considerar una articulación como "confiable" en el análisis
@@ -70,20 +74,15 @@ export class SquatAnalyzer {
   private minAngleReached: number = 180; // Máxima extensión (arriba)
   private maxAngleReached: number = 0; // Máxima flexión (abajo)
   private readonly ROM_EXTENSION_TARGET = 150; // La cadera debe subir hasta al menos 150°
-  private readonly ROM_FLEXION_TARGET = 100; // La cadera debe bajar hasta al menos 100°
+  private readonly ROM_FLEXION_TARGET = 90; // La cadera debe bajar hasta al menos 90°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
-    hip: NormalizedLandmark,
-    knee: NormalizedLandmark,
-    ankle: NormalizedLandmark,
-    width: number,
-    height: number,
+    currentAngle: number,
   ): ExerciseFeedback | null {
     // Calculamos el ángulo entre la cadera y el tobillo con vértice en la rodilla para determinar la flexión de la pierna
-    const currentAngle = calculateAngle(hip, knee, ankle, width, height);
 
     let feedback: ExerciseFeedback | null = null;
 
@@ -191,50 +190,8 @@ export class SquatAnalyzer {
     return feedback;
   }
 
-  // Método para analizar la posición de la rodilla y detectar si hay valgo
-  private checkValgo(
-    hip: NormalizedLandmark,
-    knee: NormalizedLandmark,
-    ankle: NormalizedLandmark,
-    isFacingLeft: boolean,
-  ): ExerciseFeedback | null {
-    let feedback: ExerciseFeedback | null = null;
-
-    // Convertimos las coordenadas de las articulaciones a píxeles para trabajar con valores absolutos
-    const hipX = hip.x;
-    const hipY = hip.y;
-    const kneeX = knee.x;
-    const kneeY = knee.y;
-    const ankleX = ankle.x;
-    const ankleY = ankle.y;
-
-    // Producto vectorial entre el vector cadera->tobillo y el vector cadera->rodilla
-    const crossProduct = (ankleX - hipX) * (kneeY - hipY) - (ankleY - hipY) * (kneeX - hipX);
-    const umbral = 0.02
-    if (isFacingLeft) {
-      if (crossProduct < -umbral) {
-        feedback = {
-          errorType: "TECHNICAL",
-          exercise: "SQUAT",
-          error: "KNEES_VALGUS",
-          message: "Manten las rodillas alineadas",
-        };
-      }
-    } else {
-      if (crossProduct > umbral) {
-        feedback = {
-          errorType: "TECHNICAL",
-          exercise: "SQUAT",
-          error: "KNEES_VALGUS",
-          message: "Manten las rodillas alineadas",
-        };
-      }
-    }
-    return feedback;
-  }
-
-  // Método para analizar el balanceo del cuerpo y detectar si se está balanceando hacia adelante
-  private checkForwardFront = (
+  // Método para analizar el balanceo del cuerpo y detectar si se está balanceando hacia adelante o hacia atrás
+  private checkBalanceo = (
     hip: NormalizedLandmark,
     shoulder: NormalizedLandmark,
     isFacingLeft: boolean,
@@ -263,15 +220,22 @@ export class SquatAnalyzer {
       const shoulderX = shoulder.x * width;
       const hipX = hip.x * width;
 
-      let frontBalanced = false;
+      let backBalanced = false;
 
       if (isFacingLeft) {
-        frontBalanced = hipX > shoulderX; // Si el usuario mira a la izquierda, el balanceo hacia adelante es cuando la coordenada X de la cadera es mayor que la del hombro
+        backBalanced = hipX < shoulderX; // Si el usuario mira a la izquierda, el balanceo hacia atrás es cuando la coordenada X de la cadera es menor que la del hombro
       } else {
-        frontBalanced = hipX < shoulderX; // Si el usuario mira a la derecha, el balanceo hacia adelante es cuando la coordenada X de la cadera es menor que la del hombro
+        backBalanced = hipX > shoulderX; // Si el usuario mira a la derecha, el balanceo hacia atrás es cuando la coordenada X de la cadera es mayor que la del hombro
       }
 
-      if (frontBalanced) {
+      if (backBalanced) {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "SQUAT",
+          error: "FORWARD_BACK",
+          message: "No te balancees hacia atrás",
+        };
+      } else {
         return {
           errorType: "TECHNICAL",
           exercise: "SQUAT",
@@ -282,6 +246,40 @@ export class SquatAnalyzer {
     }
     return null;
   };
+
+  // Método para analizar levantamiento de talones
+  private checkHeelLift(
+    heel: NormalizedLandmark,
+    foot: NormalizedLandmark,
+  ): ExerciseFeedback | null {
+    const heelY = heel.y;
+    const footY = foot.y;
+
+    const umbral = 0.02;
+
+    if (heelY > footY + umbral) {
+      return {
+        errorType: "TECHNICAL",
+        exercise: "SQUAT",
+        error: "HEEL_UP",
+        message: "No levantes los talones",
+      };
+    }
+    return null;
+  }
+
+  // Método para analizar el bloqueo de rodillas
+  private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
+    if (currentAngle > 170) {
+      return {
+        errorType: "TECHNICAL",
+        exercise: "SQUAT",
+        error: "KNEE_LOCKED",
+        message: "Evita bloquear las rodillas al subir",
+      };
+    }
+    return null;
+  }
 
   public analyze(
     landmarks: NormalizedLandmark[],
@@ -310,17 +308,21 @@ export class SquatAnalyzer {
     // Determinamos la orientación del usuario (mirando a la izquierda o a la derecha) para analizar el brazo correcto y dar feedback adecuado
     const isFacingLeft = noseX < midShoulderX;
 
-    let hip, knee, ankle, shoulder;
+    let hip, knee, ankle, heel, foot, shoulder;
 
     if (isFacingLeft) {
       hip = landmarks[LANDMARKS.LEFT_HIP];
       knee = landmarks[LANDMARKS.LEFT_KNEE];
       ankle = landmarks[LANDMARKS.LEFT_ANKLE];
+      heel = landmarks[LANDMARKS.LEFT_HEEL];
+      foot = landmarks[LANDMARKS.LEFT_FOOT_INDEX];
       shoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
     } else {
       hip = landmarks[LANDMARKS.RIGHT_HIP];
       knee = landmarks[LANDMARKS.RIGHT_KNEE];
       ankle = landmarks[LANDMARKS.RIGHT_ANKLE];
+      heel = landmarks[LANDMARKS.RIGHT_HEEL];
+      foot = landmarks[LANDMARKS.RIGHT_FOOT_INDEX];
       shoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
     }
 
@@ -330,6 +332,8 @@ export class SquatAnalyzer {
       !isReliable(hip) ||
       !isReliable(knee) ||
       !isReliable(ankle) ||
+      !isReliable(heel) ||
+      !isReliable(foot) ||
       !isReliable(shoulder)
     ) {
       return {
@@ -338,19 +342,24 @@ export class SquatAnalyzer {
       };
     }
 
-    /*
-    const valgo = this.checkValgo(hip, knee, ankle, isFacingLeft);
-    if (valgo != null) {
-      return valgo;
-    }
-    */
-    const forwardFront = this.checkForwardFront(hip, shoulder, isFacingLeft, width, height);
-    if (forwardFront != null) {
-      return forwardFront;
-    }
-    const rom = this.checkROM(hip, knee, ankle, width, height);
+    const currentAngle = calculateAngle(hip, knee, ankle, width, height);
+    /* Realizamos la comprobación de ROM, balanceo, levantamiento de talones y rodillas bloqueadas en orden de prioridad para dar el 
+     feedback más relevante al usuario */
+    const rom = this.checkROM(currentAngle);
     if (rom != null) {
       return rom;
+    }
+    const balanceo = this.checkBalanceo(hip, shoulder, isFacingLeft, width, height);
+    if (balanceo != null) {
+      return balanceo;
+    }
+    const heelLift = this.checkHeelLift(heel, foot);
+    if (heelLift != null) {
+      return heelLift;
+    }
+    const kneeLocked = this.checkKneeLocked(currentAngle);
+    if (kneeLocked != null) {
+      return kneeLocked;
     }
     // Si no hay errores activos y se completaron correctamente ambas fases, contamos una repetición
     if (this.concentricSuccess && this.excentricSuccess) {
@@ -371,113 +380,10 @@ export class BicepCurlAnalyzer {
   public repetitionCounter = 0; // Contador de repeticiones
   private minAngleReached: number = 180; // Máxima flexión (arriba)
   private maxAngleReached: number = 0; // Máxima extensión (abajo)
-  private readonly ROM_EXTENSION_TARGET = 140; // El brazo debe bajar hasta al menos 130°
+  private readonly ROM_EXTENSION_TARGET = 140; // El brazo debe bajar hasta al menos 140°
   private readonly ROM_FLEXION_TARGET = 75; // El brazo debe subir hasta al menos 75°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
-
-  // Método para analizar la posición del codo y detectar si se está llevando hacia adelante o hacia atrás
-  private checkPosicionCodo = (
-    hip: NormalizedLandmark,
-    shoulder: NormalizedLandmark,
-    elbow: NormalizedLandmark,
-    isFacingLeft: boolean,
-    width: number,
-    height: number,
-  ): ExerciseFeedback | null => {
-    // Calcular el ángulo de separación entre la cadera y el codo respecto al hombro
-    const separationAngle = calculateAngle(hip, shoulder, elbow, width, height);
-    const DRIFT_THRESHOLD = 22.5;
-    // Si el ángulo de separación es mayor a 22.5 grados, consideramos que el codo se está moviendo fuera del plano ideal
-    if (separationAngle > DRIFT_THRESHOLD) {
-      const shoulderX = shoulder.x * width;
-      const elbowX = elbow.x * width;
-
-      let isForward = false;
-
-      if (isFacingLeft) {
-        isForward = elbowX < shoulderX; // Si el usuario mira a la izquierda, el codo adelante es cuando su coordenada X es menor que la del hombro
-      } else {
-        isForward = elbowX > shoulderX; // Si el usuario mira a la derecha, el codo adelante es cuando su coordenada X es mayor que la del hombro
-      }
-
-      if (isForward) {
-        return {
-          errorType: "TECHNICAL",
-          exercise: "BICEP_CURL",
-          error: "ELBOW_FRONT",
-          message: "No lleves el codo hacia adelante",
-        };
-      } else {
-        return {
-          errorType: "TECHNICAL",
-          exercise: "BICEP_CURL",
-          error: "ELBOW_BACK",
-          message: "No lleves el codo hacia atrás",
-        };
-      }
-    }
-
-    return null;
-  };
-
-  // Método para analizar el balanceo del cuerpo y detectar si se está balanceando hacia adelante o hacia atrás
-  private checkBalanceo = (
-    hip: NormalizedLandmark,
-    shoulder: NormalizedLandmark,
-    isFacingLeft: boolean,
-    width: number,
-    height: number,
-  ): ExerciseFeedback | null => {
-    const vertical: NormalizedLandmark = {
-      x: shoulder.x,
-      y: 0.0,
-      z: 0.0,
-      visibility: 1.0,
-    };
-
-    // Calcular el ángulo de separación entre la vertical y la cadera respecto al hombro
-    const separationAngle = calculateAngle(
-      vertical,
-      shoulder,
-      hip,
-      width,
-      height,
-    );
-    const DRIFT_THRESHOLD = 170.0;
-
-    // Si el ángulo de separación es menor a 170 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
-    if (separationAngle < DRIFT_THRESHOLD) {
-      const shoulderX = shoulder.x * width;
-      const hipX = hip.x * width;
-
-      let backBalanced = false;
-
-      if (isFacingLeft) {
-        backBalanced = hipX < shoulderX; // Si el usuario mira a la izquierda, el balanceo hacia atrás es cuando la coordenada X de la cadera es menor que la del hombro
-      } else {
-        backBalanced = hipX > shoulderX; // Si el usuario mira a la derecha, el balanceo hacia atrás es cuando la coordenada X de la cadera es mayor que la del hombro
-      }
-
-      if (backBalanced) {
-        return {
-          errorType: "TECHNICAL",
-          exercise: "BICEP_CURL",
-          error: "FORWARD_BACK",
-          message: "No te balancees hacia atrás",
-        };
-      } else {
-        return {
-          errorType: "TECHNICAL",
-          exercise: "BICEP_CURL",
-          error: "FORWARD_FRONT",
-          message: "No te balancees hacia adelante",
-        };
-      }
-    }
-
-    return null;
-  };
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
@@ -496,7 +402,7 @@ export class BicepCurlAnalyzer {
     if (this.currentErrorFase !== null) {
       if (this.currentErrorFase === "CONCENTRIC") {
         // Error: No subió suficiente.
-        // Salida: El usuario corrigió y subió más (< 70).
+        // Salida: El usuario corrigió y subió más (< 75).
         if (currentAngle <= this.ROM_FLEXION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.concentricSuccess = true;
@@ -511,7 +417,7 @@ export class BicepCurlAnalyzer {
         }
       } else if (this.currentErrorFase === "ECCENTRIC") {
         // Error: No bajó suficiente.
-        // Salida: El usuario corrigió y bajó más (> 150).
+        // Salida: El usuario corrigió y bajó más (> 140).
         if (currentAngle >= this.ROM_EXTENSION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.excentricSuccess = true;
@@ -596,6 +502,109 @@ export class BicepCurlAnalyzer {
     return feedback;
   }
 
+  // Método para analizar el balanceo del cuerpo y detectar si se está balanceando hacia adelante o hacia atrás
+  private checkBalanceo = (
+    hip: NormalizedLandmark,
+    shoulder: NormalizedLandmark,
+    isFacingLeft: boolean,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null => {
+    const vertical: NormalizedLandmark = {
+      x: shoulder.x,
+      y: 0.0,
+      z: 0.0,
+      visibility: 1.0,
+    };
+
+    // Calcular el ángulo de separación entre la vertical y la cadera respecto al hombro
+    const separationAngle = calculateAngle(
+      vertical,
+      shoulder,
+      hip,
+      width,
+      height,
+    );
+    const DRIFT_THRESHOLD = 170.0;
+
+    // Si el ángulo de separación es menor a 170 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
+    if (separationAngle < DRIFT_THRESHOLD) {
+      const shoulderX = shoulder.x * width;
+      const hipX = hip.x * width;
+
+      let backBalanced = false;
+
+      if (isFacingLeft) {
+        backBalanced = hipX < shoulderX; // Si el usuario mira a la izquierda, el balanceo hacia atrás es cuando la coordenada X de la cadera es menor que la del hombro
+      } else {
+        backBalanced = hipX > shoulderX; // Si el usuario mira a la derecha, el balanceo hacia atrás es cuando la coordenada X de la cadera es mayor que la del hombro
+      }
+
+      if (backBalanced) {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "BICEP_CURL",
+          error: "FORWARD_BACK",
+          message: "No te balancees hacia atrás",
+        };
+      } else {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "BICEP_CURL",
+          error: "FORWARD_FRONT",
+          message: "No te balancees hacia adelante",
+        };
+      }
+    }
+
+    return null;
+  };
+
+  // Método para analizar la posición del codo y detectar si se está llevando hacia adelante o hacia atrás
+  private checkPosicionCodo = (
+    hip: NormalizedLandmark,
+    shoulder: NormalizedLandmark,
+    elbow: NormalizedLandmark,
+    isFacingLeft: boolean,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null => {
+    // Calcular el ángulo de separación entre la cadera y el codo respecto al hombro
+    const separationAngle = calculateAngle(hip, shoulder, elbow, width, height);
+    const DRIFT_THRESHOLD = 22.5;
+    // Si el ángulo de separación es mayor a 22.5 grados, consideramos que el codo se está moviendo fuera del plano ideal
+    if (separationAngle > DRIFT_THRESHOLD) {
+      const shoulderX = shoulder.x * width;
+      const elbowX = elbow.x * width;
+
+      let isForward = false;
+
+      if (isFacingLeft) {
+        isForward = elbowX < shoulderX; // Si el usuario mira a la izquierda, el codo adelante es cuando su coordenada X es menor que la del hombro
+      } else {
+        isForward = elbowX > shoulderX; // Si el usuario mira a la derecha, el codo adelante es cuando su coordenada X es mayor que la del hombro
+      }
+
+      if (isForward) {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "BICEP_CURL",
+          error: "ELBOW_FRONT",
+          message: "No lleves el codo hacia adelante",
+        };
+      } else {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "BICEP_CURL",
+          error: "ELBOW_BACK",
+          message: "No lleves el codo hacia atrás",
+        };
+      }
+    }
+
+    return null;
+  };
+
   public analyze(
     landmarks: NormalizedLandmark[],
     width: number,
@@ -651,20 +660,11 @@ export class BicepCurlAnalyzer {
       };
     }
 
-    /* Realizamos la comprobación del codo, balanceo y ROM en orden de prioridad para dar el 
-     feedback más relevante al usuario. Si se detecta un error de posición del codo, no se 
-     analiza el balanceo ni el ROM para evitar dar múltiples feedbacks al mismo tiempo y abrumar al usuario.
-    Lo mismo ocurre con el balanceo, si se detecta un error de balanceo, no se analiza el ROM. */
-    const posicionCodo = this.checkPosicionCodo(
-      hip,
-      shoulder,
-      elbow,
-      isFacingLeft,
-      width,
-      height,
-    );
-    if (posicionCodo != null) {
-      return posicionCodo;
+    /* Realizamos la comprobación de ROM, balanceo y posicion del codo en orden de prioridad para dar el 
+     feedback más relevante al usuario */
+    const rom = this.checkROM(shoulder, elbow, wrist, width, height);
+    if (rom != null) {
+      return rom;
     }
     const balanceo = this.checkBalanceo(
       hip,
@@ -676,9 +676,16 @@ export class BicepCurlAnalyzer {
     if (balanceo != null) {
       return balanceo;
     }
-    const rom = this.checkROM(shoulder, elbow, wrist, width, height);
-    if (rom != null) {
-      return rom;
+    const posicionCodo = this.checkPosicionCodo(
+      hip,
+      shoulder,
+      elbow,
+      isFacingLeft,
+      width,
+      height,
+    );
+    if (posicionCodo != null) {
+      return posicionCodo;
     }
     // Si no hay errores activos y se completaron correctamente ambas fases, contamos una repetición
     if (this.concentricSuccess && this.excentricSuccess) {

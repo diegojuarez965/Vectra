@@ -9,12 +9,13 @@ export const ERROR_LABELS = {
   NO_ROM_ECCENTRIC: "Fase excéntrica incompleta",
   NO_ROM_CONCENTRIC: "Fase concéntrica incompleta",
   FORWARD_FRONT: "Inclinación hacia adelante",
+  FORWARD_BACK: "Inclinación hacia atrás",
   // Errores de Curl
   ELBOW_BACK: "Codo atrasado",
   ELBOW_FRONT: "Codo adelantado",
-  FORWARD_BACK: "Inclinación hacia atrás",
   // Errores de Sentadilla
-  KNEES_VALGUS: "Rodillas hacia adentro",
+  HEEL_UP: "Talones levantados",
+  KNEE_LOCKED: "Rodillas bloqueadas",
 } as const;
 
 // Interface de Usuario
