@@ -74,14 +74,14 @@ export class SquatAnalyzer {
   private minAngleReached: number = 180; // Máxima extensión (arriba)
   private maxAngleReached: number = 0; // Máxima flexión (abajo)
   private readonly ROM_EXTENSION_TARGET = 150; // La cadera debe subir hasta al menos 150°
-  private readonly ROM_FLEXION_TARGET = 90; // La cadera debe bajar hasta al menos 90°
+  private readonly ROM_FLEXION_TARGET = 95; // La cadera debe bajar hasta al menos 95°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
   // Variables para detectar inactividad
   private lastHipY: number | null = null;
   private lastMovementTime: number = 0;
-  private readonly INACTIVITY_TIMEOUT_MS = 3000; // 3 segundos sin movimiento
+  private readonly INACTIVITY_TIMEOUT_MS = 5000; // 5 segundos sin movimiento
   private readonly HIP_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
@@ -96,7 +96,7 @@ export class SquatAnalyzer {
     if (this.currentErrorFase !== null) {
       if (this.currentErrorFase === "CONCENTRIC") {
         // Error: No bajó suficiente.
-        // Salida: El usuario corrigió y bajó más (< 90).
+        // Salida: El usuario corrigió y bajó más (< 95).
         if (currentAngle < this.ROM_FLEXION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.concentricSuccess = true;
@@ -261,7 +261,7 @@ export class SquatAnalyzer {
     const heelY = heel.y;
     const footY = foot.y;
 
-    const umbral = 0.02;
+    const umbral = 0.025;
 
     if (heelY > footY + umbral) {
       return {
@@ -276,7 +276,7 @@ export class SquatAnalyzer {
 
   // Método para analizar el bloqueo de rodillas
   private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
-    if (currentAngle > 170) {
+    if (currentAngle > 170 && this.excentricSuccess) {
       return {
         errorType: "TECHNICAL",
         exercise: "SQUAT",
@@ -410,7 +410,7 @@ export class BicepCurlAnalyzer {
   // Variables para detectar inactividad
   private lastWristY: number | null = null;
   private lastMovementTime: number = 0;
-  private readonly INACTIVITY_TIMEOUT_MS = 3000; // 3 segundos sin movimiento
+  private readonly INACTIVITY_TIMEOUT_MS = 5000; // 5 segundos sin movimiento
   private readonly WRIST_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
