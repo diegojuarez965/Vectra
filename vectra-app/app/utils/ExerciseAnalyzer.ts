@@ -73,7 +73,7 @@ export class SquatAnalyzer {
   private prevAngle: number = 0; // Ángulo del frame anterior
   private minAngleReached: number = 180; // Máxima extensión (arriba)
   private maxAngleReached: number = 0; // Máxima flexión (abajo)
-  private readonly ROM_EXTENSION_TARGET = 150; // La cadera debe subir hasta al menos 150°
+  private readonly ROM_EXTENSION_TARGET = 140; // La cadera debe subir hasta al menos 140°
   private readonly ROM_FLEXION_TARGET = 95; // La cadera debe bajar hasta al menos 95°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
@@ -111,7 +111,7 @@ export class SquatAnalyzer {
         }
       } else if (this.currentErrorFase === "ECCENTRIC") {
         // Error: No subió suficiente.
-        // Salida: El usuario corrigió y subió más (> 150).
+        // Salida: El usuario corrigió y subió más (> 140).
         if (currentAngle > this.ROM_EXTENSION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.excentricSuccess = true;
