@@ -261,7 +261,7 @@ export class SquatAnalyzer {
     const heelY = heel.y;
     const footY = foot.y;
 
-    const umbral = 0.08;
+    const umbral = 0.07;
 
     if (heelY < footY - umbral) {
       return {
