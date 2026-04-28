@@ -365,9 +365,13 @@ export class SquatAnalyzer {
     }
 
     const currentAngle = calculateAngle(hip, knee, ankle, width, height);
-    /* Realizamos la comprobación de ROM, balanceo, levantamiento de talones y rodillas bloqueadas en orden de prioridad para dar el 
+    /* Realizamos la comprobación de levantamiento de talones, ROM, balanceo y rodillas bloqueadas en orden de prioridad para dar el 
      feedback más relevante al usuario */
 
+    const heelLift = this.checkHeelLift(heel, foot);
+    if (heelLift != null) {
+      return heelLift;
+    }
 
     const rom = this.checkROM(currentAngle);
     if (rom != null) {
@@ -376,11 +380,6 @@ export class SquatAnalyzer {
     const balanceo = this.checkBalanceo(hip, shoulder, isFacingLeft, width, height);
     if (balanceo != null) {
       return balanceo;
-    }
-
-    const heelLift = this.checkHeelLift(heel, foot);
-    if (heelLift != null) {
-      return heelLift;
     }
 
     const kneeLocked = this.checkKneeLocked(currentAngle);
