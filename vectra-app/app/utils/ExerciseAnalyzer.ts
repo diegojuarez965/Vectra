@@ -261,7 +261,7 @@ export class SquatAnalyzer {
     const heelY = heel.y;
     const footY = foot.y;
 
-    const umbral = 0.0025;
+    const umbral = 0.01;
 
     if (heelY > footY + umbral) {
       return {
@@ -276,7 +276,7 @@ export class SquatAnalyzer {
 
   // Método para analizar el bloqueo de rodillas
   private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
-    if (currentAngle > 170 && this.currentPhase === "ECCENTRIC") {
+    if (this.concentricSuccess && currentAngle > 170) {
       return {
         errorType: "TECHNICAL",
         exercise: "SQUAT",
