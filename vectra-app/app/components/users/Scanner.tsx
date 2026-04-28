@@ -79,7 +79,7 @@ export default function Scanner({
   const analyzerRef = useRef<BicepCurlAnalyzer | SquatAnalyzer | null>(null); // Referencia al analizador
   const lastFeedbackRef = useRef<ExerciseFeedback | null>(null); // Referencia al feedback anterior
   const feedbackCooldownRef = useRef<number>(0); // Rerencia al tiempo del último error para dar tiempo a corregir la técnica
-  const COOLDOWN_MS = 2000; // 2 segundos de pausa
+  const COOLDOWN_MS = 3000; // 3 segundos de pausa
 
   // Referencias para la lógica de "Reloj Monotónico"
   const lastVideoTimeRef = useRef<number>(-1); // Último tiempo real de video procesado
