@@ -219,9 +219,9 @@ export class SquatAnalyzer {
       width,
       height,
     );
-    const DRIFT_THRESHOLD = 120.0;
+    const DRIFT_THRESHOLD = 130.0;
 
-    // Si el ángulo de separación es menor a 120 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
+    // Si el ángulo de separación es menor a 130 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
     if (separationAngle < DRIFT_THRESHOLD) {
       const shoulderX = shoulder.x * width;
       const hipX = hip.x * width;
@@ -261,7 +261,7 @@ export class SquatAnalyzer {
     const heelY = heel.y;
     const footY = foot.y;
 
-    const umbral = 0.025;
+    const umbral = 0.0025;
 
     if (heelY > footY + umbral) {
       return {
@@ -276,7 +276,7 @@ export class SquatAnalyzer {
 
   // Método para analizar el bloqueo de rodillas
   private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
-    if (currentAngle > 170 && this.excentricSuccess) {
+    if (currentAngle > 170 && this.currentPhase === "ECCENTRIC") {
       return {
         errorType: "TECHNICAL",
         exercise: "SQUAT",
@@ -367,6 +367,8 @@ export class SquatAnalyzer {
     const currentAngle = calculateAngle(hip, knee, ankle, width, height);
     /* Realizamos la comprobación de ROM, balanceo, levantamiento de talones y rodillas bloqueadas en orden de prioridad para dar el 
      feedback más relevante al usuario */
+
+
     const rom = this.checkROM(currentAngle);
     if (rom != null) {
       return rom;
@@ -375,10 +377,12 @@ export class SquatAnalyzer {
     if (balanceo != null) {
       return balanceo;
     }
+
     const heelLift = this.checkHeelLift(heel, foot);
     if (heelLift != null) {
       return heelLift;
     }
+
     const kneeLocked = this.checkKneeLocked(currentAngle);
     if (kneeLocked != null) {
       return kneeLocked;
