@@ -14,7 +14,6 @@ export const ERROR_LABELS = {
   ELBOW_BACK: "Codo atrasado",
   ELBOW_FRONT: "Codo adelantado",
   // Errores de Sentadilla
-  HEEL_UP: "Talones levantados",
   KNEE_LOCKED: "Rodillas bloqueadas",
 } as const;
 

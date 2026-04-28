@@ -17,10 +17,6 @@ const LANDMARKS = {
   RIGHT_KNEE: 26,
   LEFT_ANKLE: 27,
   RIGHT_ANKLE: 28,
-  LEFT_HEEL: 29,
-  RIGHT_HEEL: 30,
-  LEFT_FOOT_INDEX: 31,
-  RIGHT_FOOT_INDEX: 32,
 };
 
 // Visibilidad mínima para considerar una articulación como "confiable" en el análisis
@@ -253,27 +249,6 @@ export class SquatAnalyzer {
     return null;
   };
 
-  // Método para analizar levantamiento de talones
-  private checkHeelLift(
-    heel: NormalizedLandmark,
-    foot: NormalizedLandmark,
-  ): ExerciseFeedback | null {
-    const heelY = heel.y;
-    const footY = foot.y;
-
-    const umbral = 0.07;
-
-    if (heelY < footY - umbral) {
-      return {
-        errorType: "TECHNICAL",
-        exercise: "SQUAT",
-        error: "HEEL_UP",
-        message: "No levantes los talones",
-      };
-    }
-    return null;
-  }
-
   // Método para analizar el bloqueo de rodillas
   private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
     if (this.concentricSuccess && currentAngle > 170) {
@@ -314,21 +289,17 @@ export class SquatAnalyzer {
     // Determinamos la orientación del usuario (mirando a la izquierda o a la derecha) para analizar el brazo correcto y dar feedback adecuado
     const isFacingLeft = noseX < midShoulderX;
 
-    let hip, knee, ankle, heel, foot, shoulder;
+    let hip, knee, ankle, shoulder;
 
     if (isFacingLeft) {
       hip = landmarks[LANDMARKS.LEFT_HIP];
       knee = landmarks[LANDMARKS.LEFT_KNEE];
       ankle = landmarks[LANDMARKS.LEFT_ANKLE];
-      heel = landmarks[LANDMARKS.LEFT_HEEL];
-      foot = landmarks[LANDMARKS.LEFT_FOOT_INDEX];
       shoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
     } else {
       hip = landmarks[LANDMARKS.RIGHT_HIP];
       knee = landmarks[LANDMARKS.RIGHT_KNEE];
       ankle = landmarks[LANDMARKS.RIGHT_ANKLE];
-      heel = landmarks[LANDMARKS.RIGHT_HEEL];
-      foot = landmarks[LANDMARKS.RIGHT_FOOT_INDEX];
       shoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
     }
 
@@ -338,8 +309,6 @@ export class SquatAnalyzer {
       !isReliable(hip) ||
       !isReliable(knee) ||
       !isReliable(ankle) ||
-      !isReliable(heel) ||
-      !isReliable(foot) ||
       !isReliable(shoulder)
     ) {
       this.lastHipY = null; // Reiniciar inactividad si se pierde el tracking
@@ -365,13 +334,8 @@ export class SquatAnalyzer {
     }
 
     const currentAngle = calculateAngle(hip, knee, ankle, width, height);
-    /* Realizamos la comprobación de levantamiento de talones, ROM, balanceo y rodillas bloqueadas en orden de prioridad para dar el 
+    /* Realizamos la comprobación de ROM, balanceo y rodillas bloqueadas en orden de prioridad para dar el 
      feedback más relevante al usuario */
-
-    const heelLift = this.checkHeelLift(heel, foot);
-    if (heelLift != null) {
-      return heelLift;
-    }
 
     const rom = this.checkROM(currentAngle);
     if (rom != null) {
