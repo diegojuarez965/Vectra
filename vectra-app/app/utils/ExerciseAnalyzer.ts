@@ -79,6 +79,7 @@ export class SquatAnalyzer {
   private lastMovementTime: number = 0;
   private readonly INACTIVITY_TIMEOUT_MS = 5000; // 5 segundos sin movimiento
   private readonly HIP_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
+  private isKneeLocked: boolean = false; // Estado del bloqueo de rodilla
 
   // Variables para debounce de errores
   private pendingFeedback: ExerciseFeedback | null = null;
@@ -276,13 +277,27 @@ export class SquatAnalyzer {
 
   // Método para analizar el bloqueo de rodillas
   private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
-    if (this.currentPhase == "ECCENTRIC" && currentAngle > 170) {
-      return {
-        errorType: "TECHNICAL",
-        exercise: "SQUAT",
-        error: "KNEE_LOCKED",
-        message: "Evita bloquear las rodillas al subir",
-      };
+    if (this.isKneeLocked) {
+      if (currentAngle < 165) {
+        this.isKneeLocked = false;
+      } else {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "SQUAT",
+          error: "KNEE_LOCKED",
+          message: "Evita bloquear las rodillas al subir",
+        };
+      }
+    } else {
+      if (this.concentricSuccess && currentAngle > 170) {
+        this.isKneeLocked = true;
+        return {
+          errorType: "TECHNICAL",
+          exercise: "SQUAT",
+          error: "KNEE_LOCKED",
+          message: "Evita bloquear las rodillas al subir",
+        };
+      }
     }
     return null;
   }
