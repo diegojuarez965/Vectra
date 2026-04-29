@@ -21,6 +21,12 @@ interface FileScannerProps {
   exercise: Exercise;
 }
 
+const INITIAL_MESSAGES = [
+  "Comienza cuando quieras",
+  "Es hora de ponerse en forma",
+  "Vamos a entrenar juntos",
+  "Prepárate para sudar",
+];
 const POSITIVE_MESSAGES = ["Excelente", "Muy bien", "Perfecto", "Bien hecho"];
 
 export default function FileScanner({
@@ -81,11 +87,18 @@ export default function FileScanner({
         // Caso error
         textToSpeak = currentFeedback.message;
       } else {
-        // Caso positivo
-        textToSpeak =
-          POSITIVE_MESSAGES[
-          Math.floor(Math.random() * POSITIVE_MESSAGES.length)
-          ];
+        // Estado inicial
+        if (repeticiones === 0) {
+          textToSpeak =
+            INITIAL_MESSAGES[
+              Math.floor(Math.random() * INITIAL_MESSAGES.length)
+            ];
+        } else {
+          textToSpeak =
+            POSITIVE_MESSAGES[
+              Math.floor(Math.random() * POSITIVE_MESSAGES.length)
+            ];
+        }
       }
       speak(textToSpeak);
     };
@@ -100,7 +113,7 @@ export default function FileScanner({
 
     // Borramos el intervalo anterior para que no se mezclen las voces.
     return () => clearInterval(intervalId);
-  }, [currentFeedback, isMuted, speak]);
+  }, [currentFeedback, isMuted, speak, repeticiones]);
 
   // Efecto para cancelar la voz cuando se mutee
   useEffect(() => {
@@ -178,9 +191,10 @@ export default function FileScanner({
             relative group cursor-pointer flex flex-col items-center justify-center 
             w-full h-80 md:h-125 rounded-2xl md:rounded-3xl border-2 border-dashed transition-all duration-300
             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
-            ${isDragging
-              ? "border-primary bg-primary/10 scale-[1.01]"
-              : "border-foreground/10 bg-black/20 hover:bg-black/30 hover:border-primary/50"
+            ${
+              isDragging
+                ? "border-primary bg-primary/10 scale-[1.01]"
+                : "border-foreground/10 bg-black/20 hover:bg-black/30 hover:border-primary/50"
             }
           `}
         >
@@ -282,12 +296,13 @@ export default function FileScanner({
                   <div
                     className={`
                     mx-auto w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 md:mb-4 border shadow-[0_0_20px_rgba(0,0,0,0.2)]
-                    ${currentFeedback.errorType === "SYSTEM"
+                    ${
+                      currentFeedback.errorType === "SYSTEM"
                         ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
                         : currentFeedback.errorType === "POSITIONING"
                           ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
                           : "bg-red-400/5 text-red-400 border-red-400/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                      }
+                    }
                   `}
                   >
                     <AlertCircle className="w-6 h-6 md:w-8 md:h-8" />
@@ -306,22 +321,24 @@ export default function FileScanner({
                   <div
                     className={`
                     border rounded-xl p-3 md:p-4 mt-2
-                    ${currentFeedback.errorType === "SYSTEM"
+                    ${
+                      currentFeedback.errorType === "SYSTEM"
                         ? "bg-blue-500/5 border-blue-500/10"
                         : currentFeedback.errorType === "POSITIONING"
                           ? "bg-yellow-500/5 border-yellow-500/10"
                           : "bg-red-400/5 border-red-400/20"
-                      }
+                    }
                   `}
                   >
                     <p
                       className={`text-xs md:text-sm font-medium 
-                      ${currentFeedback.errorType === "SYSTEM"
+                      ${
+                        currentFeedback.errorType === "SYSTEM"
                           ? "text-blue-200/90"
                           : currentFeedback.errorType === "POSITIONING"
                             ? "text-yellow-200/90"
                             : "text-red-400"
-                        }`}
+                      }`}
                     >
                       {currentFeedback.message}
                     </p>

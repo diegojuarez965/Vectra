@@ -80,6 +80,21 @@ export class SquatAnalyzer {
   private readonly INACTIVITY_TIMEOUT_MS = 5000; // 5 segundos sin movimiento
   private readonly HIP_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
 
+  // Variables para debounce de errores
+  private pendingError: { message: string; startTime: number } | null = null;
+  private readonly ERROR_DEBOUNCE_MS = 500;
+
+  private debounceError(error: ExerciseFeedback, timestamp: number): ExerciseFeedback | null {
+    if (this.pendingError && this.pendingError.message === error.message) {
+      if (timestamp - this.pendingError.startTime >= this.ERROR_DEBOUNCE_MS) {
+        return error;
+      }
+    } else {
+      this.pendingError = { message: error.message, startTime: timestamp };
+    }
+    return null;
+  }
+
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
     currentAngle: number,
@@ -266,6 +281,7 @@ export class SquatAnalyzer {
     landmarks: NormalizedLandmark[],
     width: number,
     height: number,
+    timestamp: number,
   ): ExerciseFeedback | null {
     const nose = landmarks[LANDMARKS.NOSE];
     const leftShoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
@@ -277,10 +293,10 @@ export class SquatAnalyzer {
       !isReliable(leftShoulder) ||
       !isReliable(rightShoulder)
     ) {
-      return {
+      return this.debounceError({
         errorType: "POSITIONING",
         message: "Ponte en frente de la cámara",
-      };
+      }, timestamp);
     }
 
     const noseX = nose.x * width;
@@ -312,24 +328,24 @@ export class SquatAnalyzer {
       !isReliable(shoulder)
     ) {
       this.lastHipY = null; // Reiniciar inactividad si se pierde el tracking
-      return {
+      return this.debounceError({
         errorType: "POSITIONING",
         message: "Ponte de perfil",
-      };
+      }, timestamp);
     }
     // Comprobación de inactividad (sin movimiento por x segundos)
     if (this.lastHipY === null) {
       this.lastHipY = hip.y;
-      this.lastMovementTime = Date.now();
+      this.lastMovementTime = timestamp;
     } else {
       if (Math.abs(hip.y - this.lastHipY) > this.HIP_MOVEMENT_THRESHOLD) {
         this.lastHipY = hip.y;
-        this.lastMovementTime = Date.now();
-      } else if (Date.now() - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
-        return {
+        this.lastMovementTime = timestamp;
+      } else if (timestamp - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
+        return this.debounceError({
           errorType: "POSITIONING",
           message: "No se detecta movimiento",
-        };
+        }, timestamp);
       }
     }
 
@@ -339,17 +355,22 @@ export class SquatAnalyzer {
 
     const rom = this.checkROM(currentAngle);
     if (rom != null) {
+      this.pendingError = null; // ROM error tiene su propio estado, limpiamos el debounce
       return rom;
     }
     const balanceo = this.checkBalanceo(hip, shoulder, isFacingLeft, width, height);
     if (balanceo != null) {
-      return balanceo;
+      return this.debounceError(balanceo, timestamp);
     }
 
     const kneeLocked = this.checkKneeLocked(currentAngle);
     if (kneeLocked != null) {
-      return kneeLocked;
+      return this.debounceError(kneeLocked, timestamp);
     }
+    
+    // Si llegamos acá sin retornar, no hay errores continuos activos
+    this.pendingError = null;
+
     // Si no hay errores activos y se completaron correctamente ambas fases, contamos una repetición
     if (this.concentricSuccess && this.excentricSuccess) {
       this.repetitionCounter += 1;
@@ -379,6 +400,21 @@ export class BicepCurlAnalyzer {
   private lastMovementTime: number = 0;
   private readonly INACTIVITY_TIMEOUT_MS = 5000; // 5 segundos sin movimiento
   private readonly WRIST_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
+
+  // Variables para debounce de errores
+  private pendingError: { message: string; startTime: number } | null = null;
+  private readonly ERROR_DEBOUNCE_MS = 500;
+
+  private debounceError(error: ExerciseFeedback, timestamp: number): ExerciseFeedback | null {
+    if (this.pendingError && this.pendingError.message === error.message) {
+      if (timestamp - this.pendingError.startTime >= this.ERROR_DEBOUNCE_MS) {
+        return error;
+      }
+    } else {
+      this.pendingError = { message: error.message, startTime: timestamp };
+    }
+    return null;
+  }
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
@@ -604,6 +640,7 @@ export class BicepCurlAnalyzer {
     landmarks: NormalizedLandmark[],
     width: number,
     height: number,
+    timestamp: number,
   ): ExerciseFeedback | null {
 
     const nose = landmarks[LANDMARKS.NOSE];
@@ -616,10 +653,10 @@ export class BicepCurlAnalyzer {
       !isReliable(leftShoulder) ||
       !isReliable(rightShoulder)
     ) {
-      return {
+      return this.debounceError({
         errorType: "POSITIONING",
         message: "Ponte en frente de la cámara",
-      };
+      }, timestamp);
     }
 
     const noseX = nose.x * width;
@@ -651,25 +688,25 @@ export class BicepCurlAnalyzer {
       !isReliable(wrist)
     ) {
       this.lastWristY = null; // Reiniciar inactividad si se pierde el tracking
-      return {
+      return this.debounceError({
         errorType: "POSITIONING",
         message: "Ponte de perfil",
-      };
+      }, timestamp);
     }
 
     // Comprobación de inactividad (sin movimiento por x segundos)
     if (this.lastWristY === null) {
       this.lastWristY = wrist.y;
-      this.lastMovementTime = Date.now();
+      this.lastMovementTime = timestamp;
     } else {
       if (Math.abs(wrist.y - this.lastWristY) > this.WRIST_MOVEMENT_THRESHOLD) {
         this.lastWristY = wrist.y;
-        this.lastMovementTime = Date.now();
-      } else if (Date.now() - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
-        return {
+        this.lastMovementTime = timestamp;
+      } else if (timestamp - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
+        return this.debounceError({
           errorType: "POSITIONING",
           message: "No se detecta movimiento",
-        };
+        }, timestamp);
       }
     }
 
@@ -677,6 +714,7 @@ export class BicepCurlAnalyzer {
      feedback más relevante al usuario */
     const rom = this.checkROM(shoulder, elbow, wrist, width, height);
     if (rom != null) {
+      this.pendingError = null; // Limpiamos debounce porque ROM es sticky
       return rom;
     }
     const balanceo = this.checkBalanceo(
@@ -687,7 +725,7 @@ export class BicepCurlAnalyzer {
       height,
     );
     if (balanceo != null) {
-      return balanceo;
+      return this.debounceError(balanceo, timestamp);
     }
     const posicionCodo = this.checkPosicionCodo(
       hip,
@@ -698,8 +736,12 @@ export class BicepCurlAnalyzer {
       height,
     );
     if (posicionCodo != null) {
-      return posicionCodo;
+      return this.debounceError(posicionCodo, timestamp);
     }
+    
+    // Si llegamos acá sin retornar, no hay errores continuos activos
+    this.pendingError = null;
+
     // Si no hay errores activos y se completaron correctamente ambas fases, contamos una repetición
     if (this.concentricSuccess && this.excentricSuccess) {
       this.repetitionCounter += 1;

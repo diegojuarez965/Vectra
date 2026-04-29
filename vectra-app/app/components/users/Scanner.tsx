@@ -361,27 +361,30 @@ export default function Scanner({
                 setRepeticiones(repetitionCount);
               }
 
-              // Lógica de COOLDOWN
+              // Lógica de COOLDOWN visual
               const now = Date.now();
               const isInCooldown =
                 now - feedbackCooldownRef.current < COOLDOWN_MS;
-              // Solo analizamos si no estamos en COOLDOWN
-              if (!isInCooldown) {
-                if (analyzerRef.current && finalLandmarks) {
-                  const analysisResult = analyzerRef.current.analyze(
-                    finalLandmarks,
-                    video.videoWidth,
-                    video.videoHeight,
-                  );
 
-                  // Actualizamos el feedback solo si ha cambiado
+              // Ejecutamos el analizador siempre para no perder el estado del ejercicio
+              if (analyzerRef.current && finalLandmarks) {
+                const analysisResult = analyzerRef.current.analyze(
+                  finalLandmarks,
+                  video.videoWidth,
+                  video.videoHeight,
+                  timestampForAI,
+                );
+
+                // Actualizamos el feedback visual basado en el cooldown
+                if (!isInCooldown) {
+                  // Si el cooldown expiró, la UI puede actualizarse libremente
                   if (
                     analysisResult?.message !== lastFeedbackRef.current?.message
                   ) {
                     setFeedback(analysisResult);
                     lastFeedbackRef.current = analysisResult;
 
-                    // Si detectamos un error activamos el COOLDOWN
+                    // Si lo que mostramos es un error, iniciamos el cooldown para que se mantenga en pantalla
                     if (analysisResult !== null) {
                       feedbackCooldownRef.current = now;
                     }
@@ -483,10 +486,11 @@ export default function Scanner({
       // Al hacer click en el contenedor, mostramos/ocultamos controles
       onClick={() => setShowControls((prev) => !prev)}
       className={`bg-black/20 overflow-hidden shadow-2xl group transition-all duration-300 border-none
-      ${isFullscreen
+      ${
+        isFullscreen
           ? "fixed inset-0 z-100 w-screen h-dvh rounded-none"
           : "relative w-full h-full rounded-xl"
-        }`}
+      }`}
       // Evita scroll accidental en móvil fullscreen
       style={{ touchAction: isFullscreen ? "none" : "auto" }}
     >
@@ -661,7 +665,9 @@ export default function Scanner({
               <Play
                 className={`w-3 h-3 ${isFilePlaying ? "text-green-500" : "text-foreground/80"}`}
               />
-              <span className="text-xs font-mono text-foreground/80">REPLAY</span>
+              <span className="text-xs font-mono text-foreground/80">
+                REPLAY
+              </span>
             </>
           )}
         </div>
