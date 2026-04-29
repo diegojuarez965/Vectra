@@ -276,7 +276,7 @@ export class SquatAnalyzer {
 
   // Método para analizar el bloqueo de rodillas
   private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
-    if (this.concentricSuccess && currentAngle > 170) {
+    if (this.currentPhase == "ECCENTRIC" && currentAngle > 170) {
       return {
         errorType: "TECHNICAL",
         exercise: "SQUAT",
