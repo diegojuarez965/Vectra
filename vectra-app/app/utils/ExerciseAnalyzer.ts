@@ -83,14 +83,20 @@ export class SquatAnalyzer {
   // Variables para debounce de errores
   private pendingFeedback: ExerciseFeedback | null = null;
   private pendingStartTime: number = 0;
-  private lastConfirmedFeedback: ExerciseFeedback = { errorType: "OK", message: "Perfecto" };
-  private readonly DEBOUNCE_MS = 500;
+  private lastConfirmedFeedback: ExerciseFeedback = {
+    errorType: "OK",
+    message: "Perfecto",
+  };
+  private readonly DEBOUNCE_MS = 1000;
 
   private debounceFeedback(
     feedback: ExerciseFeedback,
     timestamp: number,
   ): ExerciseFeedback {
-    if (this.pendingFeedback && this.pendingFeedback.message === feedback.message) {
+    if (
+      this.pendingFeedback &&
+      this.pendingFeedback.message === feedback.message
+    ) {
       if (timestamp - this.pendingStartTime >= this.DEBOUNCE_MS) {
         this.lastConfirmedFeedback = feedback;
       }
@@ -294,8 +300,15 @@ export class SquatAnalyzer {
     let rawFeedback: ExerciseFeedback | null = null;
 
     // Verificamos que las articulaciones clave para determinar la orientación del usuario sean confiables
-    if (!isReliable(nose) || !isReliable(leftShoulder) || !isReliable(rightShoulder)) {
-      rawFeedback = { errorType: "POSITIONING", message: "Ponte en frente de la cámara" };
+    if (
+      !isReliable(nose) ||
+      !isReliable(leftShoulder) ||
+      !isReliable(rightShoulder)
+    ) {
+      rawFeedback = {
+        errorType: "POSITIONING",
+        message: "Ponte en frente de la cámara",
+      };
     } else {
       const noseX = nose.x * width;
       const midShoulderX = ((leftShoulder.x + rightShoulder.x) / 2) * width;
@@ -315,7 +328,12 @@ export class SquatAnalyzer {
         shoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
       }
 
-      if (!isReliable(hip) || !isReliable(knee) || !isReliable(ankle) || !isReliable(shoulder)) {
+      if (
+        !isReliable(hip) ||
+        !isReliable(knee) ||
+        !isReliable(ankle) ||
+        !isReliable(shoulder)
+      ) {
         this.lastHipY = null; // Reiniciar inactividad si se pierde el tracking
         rawFeedback = { errorType: "POSITIONING", message: "Ponte de perfil" };
       } else {
@@ -327,27 +345,44 @@ export class SquatAnalyzer {
           if (Math.abs(hip.y - this.lastHipY) > this.HIP_MOVEMENT_THRESHOLD) {
             this.lastHipY = hip.y;
             this.lastMovementTime = timestamp;
-          } else if (timestamp - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
-            rawFeedback = { errorType: "POSITIONING", message: "No se detecta movimiento" };
+          } else if (
+            timestamp - this.lastMovementTime >
+            this.INACTIVITY_TIMEOUT_MS
+          ) {
+            rawFeedback = {
+              errorType: "POSITIONING",
+              message: "No se detecta movimiento",
+            };
           }
         }
 
         if (rawFeedback === null) {
           const currentAngle = calculateAngle(hip, knee, ankle, width, height);
+
+          // Este es un error que depende de un cambio de fase, por lo que no debe ser debounceado
           const rom = this.checkROM(currentAngle);
           if (rom != null) {
             this.lastConfirmedFeedback = rom;
             this.pendingFeedback = rom;
             return rom;
           }
-
-          const balanceo = this.checkBalanceo(hip, shoulder, isFacingLeft, width, height);
+          // Este error debe ser debounceado ya que depende únicamente de un criterio no basado en fases
+          const balanceo = this.checkBalanceo(
+            hip,
+            shoulder,
+            isFacingLeft,
+            width,
+            height,
+          );
           if (balanceo != null) {
             rawFeedback = balanceo;
           } else {
+            // Este es un error que depende del cumplimiento de una fase, por lo que no debe ser debounceado
             const kneeLocked = this.checkKneeLocked(currentAngle);
             if (kneeLocked != null) {
-              rawFeedback = kneeLocked;
+              this.lastConfirmedFeedback = kneeLocked;
+              this.pendingFeedback = kneeLocked;
+              return kneeLocked;
             }
           }
         }
@@ -398,14 +433,20 @@ export class BicepCurlAnalyzer {
   // Variables para debounce de errores
   private pendingFeedback: ExerciseFeedback | null = null;
   private pendingStartTime: number = 0;
-  private lastConfirmedFeedback: ExerciseFeedback = { errorType: "OK", message: "Perfecto" };
-  private readonly DEBOUNCE_MS = 500;
+  private lastConfirmedFeedback: ExerciseFeedback = {
+    errorType: "OK",
+    message: "Perfecto",
+  };
+  private readonly DEBOUNCE_MS = 1000;
 
   private debounceFeedback(
     feedback: ExerciseFeedback,
     timestamp: number,
   ): ExerciseFeedback {
-    if (this.pendingFeedback && this.pendingFeedback.message === feedback.message) {
+    if (
+      this.pendingFeedback &&
+      this.pendingFeedback.message === feedback.message
+    ) {
       if (timestamp - this.pendingStartTime >= this.DEBOUNCE_MS) {
         this.lastConfirmedFeedback = feedback;
       }
@@ -648,8 +689,15 @@ export class BicepCurlAnalyzer {
 
     let rawFeedback: ExerciseFeedback | null = null;
 
-    if (!isReliable(nose) || !isReliable(leftShoulder) || !isReliable(rightShoulder)) {
-      rawFeedback = { errorType: "POSITIONING", message: "Ponte en frente de la cámara" };
+    if (
+      !isReliable(nose) ||
+      !isReliable(leftShoulder) ||
+      !isReliable(rightShoulder)
+    ) {
+      rawFeedback = {
+        errorType: "POSITIONING",
+        message: "Ponte en frente de la cámara",
+      };
     } else {
       const noseX = nose.x * width;
       const midShoulderX = ((leftShoulder.x + rightShoulder.x) / 2) * width;
@@ -669,7 +717,12 @@ export class BicepCurlAnalyzer {
         wrist = landmarks[LANDMARKS.RIGHT_WRIST];
       }
 
-      if (!isReliable(hip) || !isReliable(shoulder) || !isReliable(elbow) || !isReliable(wrist)) {
+      if (
+        !isReliable(hip) ||
+        !isReliable(shoulder) ||
+        !isReliable(elbow) ||
+        !isReliable(wrist)
+      ) {
         this.lastWristY = null;
         rawFeedback = { errorType: "POSITIONING", message: "Ponte de perfil" };
       } else {
@@ -677,27 +730,50 @@ export class BicepCurlAnalyzer {
           this.lastWristY = wrist.y;
           this.lastMovementTime = timestamp;
         } else {
-          if (Math.abs(wrist.y - this.lastWristY) > this.WRIST_MOVEMENT_THRESHOLD) {
+          if (
+            Math.abs(wrist.y - this.lastWristY) > this.WRIST_MOVEMENT_THRESHOLD
+          ) {
             this.lastWristY = wrist.y;
             this.lastMovementTime = timestamp;
-          } else if (timestamp - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
-            rawFeedback = { errorType: "POSITIONING", message: "No se detecta movimiento" };
+          } else if (
+            timestamp - this.lastMovementTime >
+            this.INACTIVITY_TIMEOUT_MS
+          ) {
+            rawFeedback = {
+              errorType: "POSITIONING",
+              message: "No se detecta movimiento",
+            };
           }
         }
 
         if (rawFeedback === null) {
+          // Este es un error que depende de un cambio de fase, por lo que no debe ser debounceado
           const rom = this.checkROM(shoulder, elbow, wrist, width, height);
           if (rom != null) {
             this.lastConfirmedFeedback = rom;
             this.pendingFeedback = rom;
             return rom;
           }
-
-          const balanceo = this.checkBalanceo(hip, shoulder, isFacingLeft, width, height);
+          // Este error debe ser debounceado ya que depende de un criterio no basado en fases
+          const balanceo = this.checkBalanceo(
+            hip,
+            shoulder,
+            isFacingLeft,
+            width,
+            height,
+          );
           if (balanceo != null) {
             rawFeedback = balanceo;
           } else {
-            const posicionCodo = this.checkPosicionCodo(hip, shoulder, elbow, isFacingLeft, width, height);
+            // Este error debe ser debounceado ya que depende de un criterio no basado en fases
+            const posicionCodo = this.checkPosicionCodo(
+              hip,
+              shoulder,
+              elbow,
+              isFacingLeft,
+              width,
+              height,
+            );
             if (posicionCodo != null) {
               rawFeedback = posicionCodo;
             }
