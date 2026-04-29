@@ -363,8 +363,6 @@ export default function Scanner({
 
               // Lógica de COOLDOWN visual
               const now = Date.now();
-              const isInCooldown =
-                now - feedbackCooldownRef.current < COOLDOWN_MS;
 
               // Ejecutamos el analizador siempre para no perder el estado del ejercicio
               if (analyzerRef.current && finalLandmarks) {
@@ -375,17 +373,22 @@ export default function Scanner({
                   timestampForAI,
                 );
 
+                // Estamos en cooldown si han pasado al menos COOLDOWN_MS milisegundos y no estamos en un estado "OK"
+                const isInCooldown =
+                  now - feedbackCooldownRef.current < COOLDOWN_MS &&
+                  analysisResult.errorType !== "OK";
+
                 // Actualizamos el feedback visual basado en el cooldown
                 if (!isInCooldown) {
                   // Si el cooldown expiró, la UI puede actualizarse libremente
                   if (
-                    analysisResult?.message !== lastFeedbackRef.current?.message
+                    analysisResult.message !== lastFeedbackRef.current?.message
                   ) {
                     setFeedback(analysisResult);
                     lastFeedbackRef.current = analysisResult;
 
-                    // Si lo que mostramos es un error, iniciamos el cooldown para que se mantenga en pantalla
-                    if (analysisResult !== null) {
+                    // Si hay un error, iniciamos el cooldown para que se mantenga en pantalla
+                    if (analysisResult.errorType !== "OK") {
                       feedbackCooldownRef.current = now;
                     }
                   }

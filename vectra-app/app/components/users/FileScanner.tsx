@@ -80,14 +80,19 @@ export default function FileScanner({
   // Efecto para hablar
   useEffect(() => {
     const triggerSpeach = () => {
-      // Si estamos mutados no hacemos nada
       if (isMuted) return;
+
       let textToSpeak = "";
-      if (currentFeedback && currentFeedback.message) {
-        // Caso error
+      // Feedback del sistema no se puede hablar
+      if (currentFeedback?.errorType === "SYSTEM") return;
+      // Caso error técnico o de posicionamiento
+      else if (
+        currentFeedback?.errorType === "TECHNICAL" ||
+        currentFeedback?.errorType === "POSITIONING"
+      )
         textToSpeak = currentFeedback.message;
-      } else {
-        // Estado inicial
+      // Caso OK
+      else if (currentFeedback?.errorType === "OK") {
         if (repeticiones === 0) {
           textToSpeak =
             INITIAL_MESSAGES[
@@ -100,18 +105,15 @@ export default function FileScanner({
             ];
         }
       }
-      speak(textToSpeak);
+      if (textToSpeak) speak(textToSpeak);
     };
 
-    // Ejecutamos cada vez que cambia el estado
     triggerSpeach();
 
-    // Configurar el intervalo de 10 segundos
     const intervalId = setInterval(() => {
       triggerSpeach();
     }, 10000);
 
-    // Borramos el intervalo anterior para que no se mezclen las voces.
     return () => clearInterval(intervalId);
   }, [currentFeedback, isMuted, speak, repeticiones]);
 
@@ -290,7 +292,7 @@ export default function FileScanner({
           {/* COLUMNA LATERAL (FEEDBACK) */}
           <div className="lg:col-span-3 flex flex-col gap-4">
             <div className="flex-1 flex flex-col justify-center items-center text-center bg-black/20 backdrop-blur-md p-3 md:p-4 rounded-xl md:rounded-2xl border border-foreground/10">
-              {currentFeedback ? (
+              {currentFeedback && currentFeedback.errorType !== "OK" ? (
                 <div className="animate-in zoom-in duration-300 w-full">
                   {/* ICONO */}
                   <div

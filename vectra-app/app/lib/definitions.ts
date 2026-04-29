@@ -48,7 +48,7 @@ export interface UsersResponse {
 
 // Feedback para el usuario
 export interface ExerciseFeedback {
-  errorType: "TECHNICAL" | "POSITIONING" | "SYSTEM";
+  errorType: "TECHNICAL" | "POSITIONING" | "SYSTEM" | "OK";
   exercise?: Exercise;
   error?: ExerciseError;
   message: string;

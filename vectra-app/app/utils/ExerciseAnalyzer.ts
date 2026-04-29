@@ -81,24 +81,28 @@ export class SquatAnalyzer {
   private readonly HIP_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
 
   // Variables para debounce de errores
-  private pendingError: { message: string; startTime: number } | null = null;
-  private readonly ERROR_DEBOUNCE_MS = 500;
+  private pendingFeedback: ExerciseFeedback | null = null;
+  private pendingStartTime: number = 0;
+  private lastConfirmedFeedback: ExerciseFeedback = { errorType: "OK", message: "Perfecto" };
+  private readonly DEBOUNCE_MS = 500;
 
-  private debounceError(error: ExerciseFeedback, timestamp: number): ExerciseFeedback | null {
-    if (this.pendingError && this.pendingError.message === error.message) {
-      if (timestamp - this.pendingError.startTime >= this.ERROR_DEBOUNCE_MS) {
-        return error;
+  private debounceFeedback(
+    feedback: ExerciseFeedback,
+    timestamp: number,
+  ): ExerciseFeedback {
+    if (this.pendingFeedback && this.pendingFeedback.message === feedback.message) {
+      if (timestamp - this.pendingStartTime >= this.DEBOUNCE_MS) {
+        this.lastConfirmedFeedback = feedback;
       }
     } else {
-      this.pendingError = { message: error.message, startTime: timestamp };
+      this.pendingFeedback = feedback;
+      this.pendingStartTime = timestamp;
     }
-    return null;
+    return this.lastConfirmedFeedback;
   }
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
-  private checkROM(
-    currentAngle: number,
-  ): ExerciseFeedback | null {
+  private checkROM(currentAngle: number): ExerciseFeedback | null {
     // Calculamos el ángulo entre la cadera y el tobillo con vértice en la rodilla para determinar la flexión de la pierna
 
     let feedback: ExerciseFeedback | null = null;
@@ -282,102 +286,92 @@ export class SquatAnalyzer {
     width: number,
     height: number,
     timestamp: number,
-  ): ExerciseFeedback | null {
+  ): ExerciseFeedback {
     const nose = landmarks[LANDMARKS.NOSE];
     const leftShoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
     const rightShoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
 
+    let rawFeedback: ExerciseFeedback | null = null;
+
     // Verificamos que las articulaciones clave para determinar la orientación del usuario sean confiables
-    if (
-      !isReliable(nose) ||
-      !isReliable(leftShoulder) ||
-      !isReliable(rightShoulder)
-    ) {
-      return this.debounceError({
-        errorType: "POSITIONING",
-        message: "Ponte en frente de la cámara",
-      }, timestamp);
-    }
-
-    const noseX = nose.x * width;
-    const midShoulderX = ((leftShoulder.x + rightShoulder.x) / 2) * width;
-
-    // Determinamos la orientación del usuario (mirando a la izquierda o a la derecha) para analizar el brazo correcto y dar feedback adecuado
-    const isFacingLeft = noseX < midShoulderX;
-
-    let hip, knee, ankle, shoulder;
-
-    if (isFacingLeft) {
-      hip = landmarks[LANDMARKS.LEFT_HIP];
-      knee = landmarks[LANDMARKS.LEFT_KNEE];
-      ankle = landmarks[LANDMARKS.LEFT_ANKLE];
-      shoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
+    if (!isReliable(nose) || !isReliable(leftShoulder) || !isReliable(rightShoulder)) {
+      rawFeedback = { errorType: "POSITIONING", message: "Ponte en frente de la cámara" };
     } else {
-      hip = landmarks[LANDMARKS.RIGHT_HIP];
-      knee = landmarks[LANDMARKS.RIGHT_KNEE];
-      ankle = landmarks[LANDMARKS.RIGHT_ANKLE];
-      shoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
-    }
+      const noseX = nose.x * width;
+      const midShoulderX = ((leftShoulder.x + rightShoulder.x) / 2) * width;
+      const isFacingLeft = noseX < midShoulderX;
 
-    /* Verificamos que las articulaciones clave para el ejercicio sean confiables antes de realizar cualquier 
-    análisis para evitar dar feedback erróneo por una mala detección */
-    if (
-      !isReliable(hip) ||
-      !isReliable(knee) ||
-      !isReliable(ankle) ||
-      !isReliable(shoulder)
-    ) {
-      this.lastHipY = null; // Reiniciar inactividad si se pierde el tracking
-      return this.debounceError({
-        errorType: "POSITIONING",
-        message: "Ponte de perfil",
-      }, timestamp);
-    }
-    // Comprobación de inactividad (sin movimiento por x segundos)
-    if (this.lastHipY === null) {
-      this.lastHipY = hip.y;
-      this.lastMovementTime = timestamp;
-    } else {
-      if (Math.abs(hip.y - this.lastHipY) > this.HIP_MOVEMENT_THRESHOLD) {
-        this.lastHipY = hip.y;
-        this.lastMovementTime = timestamp;
-      } else if (timestamp - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
-        return this.debounceError({
-          errorType: "POSITIONING",
-          message: "No se detecta movimiento",
-        }, timestamp);
+      let hip, knee, ankle, shoulder;
+
+      if (isFacingLeft) {
+        hip = landmarks[LANDMARKS.LEFT_HIP];
+        knee = landmarks[LANDMARKS.LEFT_KNEE];
+        ankle = landmarks[LANDMARKS.LEFT_ANKLE];
+        shoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
+      } else {
+        hip = landmarks[LANDMARKS.RIGHT_HIP];
+        knee = landmarks[LANDMARKS.RIGHT_KNEE];
+        ankle = landmarks[LANDMARKS.RIGHT_ANKLE];
+        shoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
+      }
+
+      if (!isReliable(hip) || !isReliable(knee) || !isReliable(ankle) || !isReliable(shoulder)) {
+        this.lastHipY = null; // Reiniciar inactividad si se pierde el tracking
+        rawFeedback = { errorType: "POSITIONING", message: "Ponte de perfil" };
+      } else {
+        // Comprobación de inactividad
+        if (this.lastHipY === null) {
+          this.lastHipY = hip.y;
+          this.lastMovementTime = timestamp;
+        } else {
+          if (Math.abs(hip.y - this.lastHipY) > this.HIP_MOVEMENT_THRESHOLD) {
+            this.lastHipY = hip.y;
+            this.lastMovementTime = timestamp;
+          } else if (timestamp - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
+            rawFeedback = { errorType: "POSITIONING", message: "No se detecta movimiento" };
+          }
+        }
+
+        if (rawFeedback === null) {
+          const currentAngle = calculateAngle(hip, knee, ankle, width, height);
+          const rom = this.checkROM(currentAngle);
+          if (rom != null) {
+            this.lastConfirmedFeedback = rom;
+            this.pendingFeedback = rom;
+            return rom;
+          }
+
+          const balanceo = this.checkBalanceo(hip, shoulder, isFacingLeft, width, height);
+          if (balanceo != null) {
+            rawFeedback = balanceo;
+          } else {
+            const kneeLocked = this.checkKneeLocked(currentAngle);
+            if (kneeLocked != null) {
+              rawFeedback = kneeLocked;
+            }
+          }
+        }
       }
     }
 
-    const currentAngle = calculateAngle(hip, knee, ankle, width, height);
-    /* Realizamos la comprobación de ROM, balanceo y rodillas bloqueadas en orden de prioridad para dar el 
-     feedback más relevante al usuario */
-
-    const rom = this.checkROM(currentAngle);
-    if (rom != null) {
-      this.pendingError = null; // ROM error tiene su propio estado, limpiamos el debounce
-      return rom;
-    }
-    const balanceo = this.checkBalanceo(hip, shoulder, isFacingLeft, width, height);
-    if (balanceo != null) {
-      return this.debounceError(balanceo, timestamp);
+    if (rawFeedback === null) {
+      rawFeedback = { errorType: "OK", message: "Perfecto" };
     }
 
-    const kneeLocked = this.checkKneeLocked(currentAngle);
-    if (kneeLocked != null) {
-      return this.debounceError(kneeLocked, timestamp);
-    }
-    
-    // Si llegamos acá sin retornar, no hay errores continuos activos
-    this.pendingError = null;
+    const confirmed = this.debounceFeedback(rawFeedback, timestamp);
 
-    // Si no hay errores activos y se completaron correctamente ambas fases, contamos una repetición
-    if (this.concentricSuccess && this.excentricSuccess) {
-      this.repetitionCounter += 1;
+    if (confirmed.errorType === "OK") {
+      if (this.concentricSuccess && this.excentricSuccess) {
+        this.repetitionCounter += 1;
+        this.concentricSuccess = false;
+        this.excentricSuccess = false;
+      }
+    } else {
       this.concentricSuccess = false;
       this.excentricSuccess = false;
     }
-    return null;
+
+    return confirmed;
   }
 }
 
@@ -402,18 +396,24 @@ export class BicepCurlAnalyzer {
   private readonly WRIST_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
 
   // Variables para debounce de errores
-  private pendingError: { message: string; startTime: number } | null = null;
-  private readonly ERROR_DEBOUNCE_MS = 500;
+  private pendingFeedback: ExerciseFeedback | null = null;
+  private pendingStartTime: number = 0;
+  private lastConfirmedFeedback: ExerciseFeedback = { errorType: "OK", message: "Perfecto" };
+  private readonly DEBOUNCE_MS = 500;
 
-  private debounceError(error: ExerciseFeedback, timestamp: number): ExerciseFeedback | null {
-    if (this.pendingError && this.pendingError.message === error.message) {
-      if (timestamp - this.pendingError.startTime >= this.ERROR_DEBOUNCE_MS) {
-        return error;
+  private debounceFeedback(
+    feedback: ExerciseFeedback,
+    timestamp: number,
+  ): ExerciseFeedback {
+    if (this.pendingFeedback && this.pendingFeedback.message === feedback.message) {
+      if (timestamp - this.pendingStartTime >= this.DEBOUNCE_MS) {
+        this.lastConfirmedFeedback = feedback;
       }
     } else {
-      this.pendingError = { message: error.message, startTime: timestamp };
+      this.pendingFeedback = feedback;
+      this.pendingStartTime = timestamp;
     }
-    return null;
+    return this.lastConfirmedFeedback;
   }
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
@@ -641,113 +641,88 @@ export class BicepCurlAnalyzer {
     width: number,
     height: number,
     timestamp: number,
-  ): ExerciseFeedback | null {
-
+  ): ExerciseFeedback {
     const nose = landmarks[LANDMARKS.NOSE];
     const leftShoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
     const rightShoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
 
-    // Verificamos que las articulaciones clave para determinar la orientación del usuario sean confiables
-    if (
-      !isReliable(nose) ||
-      !isReliable(leftShoulder) ||
-      !isReliable(rightShoulder)
-    ) {
-      return this.debounceError({
-        errorType: "POSITIONING",
-        message: "Ponte en frente de la cámara",
-      }, timestamp);
-    }
+    let rawFeedback: ExerciseFeedback | null = null;
 
-    const noseX = nose.x * width;
-    const midShoulderX = ((leftShoulder.x + rightShoulder.x) / 2) * width;
-
-    // Determinamos la orientación del usuario (mirando a la izquierda o a la derecha) para analizar el brazo correcto y dar feedback adecuado
-    const isFacingLeft = noseX < midShoulderX;
-
-    let hip, shoulder, elbow, wrist;
-
-    if (isFacingLeft) {
-      hip = landmarks[LANDMARKS.LEFT_HIP];
-      shoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
-      elbow = landmarks[LANDMARKS.LEFT_ELBOW];
-      wrist = landmarks[LANDMARKS.LEFT_WRIST];
+    if (!isReliable(nose) || !isReliable(leftShoulder) || !isReliable(rightShoulder)) {
+      rawFeedback = { errorType: "POSITIONING", message: "Ponte en frente de la cámara" };
     } else {
-      hip = landmarks[LANDMARKS.RIGHT_HIP];
-      shoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
-      elbow = landmarks[LANDMARKS.RIGHT_ELBOW];
-      wrist = landmarks[LANDMARKS.RIGHT_WRIST];
-    }
+      const noseX = nose.x * width;
+      const midShoulderX = ((leftShoulder.x + rightShoulder.x) / 2) * width;
+      const isFacingLeft = noseX < midShoulderX;
 
-    /* Verificamos que las articulaciones clave para el ejercicio sean confiables antes de realizar cualquier 
-    análisis para evitar dar feedback erróneo por una mala detección */
-    if (
-      !isReliable(hip) ||
-      !isReliable(shoulder) ||
-      !isReliable(elbow) ||
-      !isReliable(wrist)
-    ) {
-      this.lastWristY = null; // Reiniciar inactividad si se pierde el tracking
-      return this.debounceError({
-        errorType: "POSITIONING",
-        message: "Ponte de perfil",
-      }, timestamp);
-    }
+      let hip, shoulder, elbow, wrist;
 
-    // Comprobación de inactividad (sin movimiento por x segundos)
-    if (this.lastWristY === null) {
-      this.lastWristY = wrist.y;
-      this.lastMovementTime = timestamp;
-    } else {
-      if (Math.abs(wrist.y - this.lastWristY) > this.WRIST_MOVEMENT_THRESHOLD) {
-        this.lastWristY = wrist.y;
-        this.lastMovementTime = timestamp;
-      } else if (timestamp - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
-        return this.debounceError({
-          errorType: "POSITIONING",
-          message: "No se detecta movimiento",
-        }, timestamp);
+      if (isFacingLeft) {
+        hip = landmarks[LANDMARKS.LEFT_HIP];
+        shoulder = landmarks[LANDMARKS.LEFT_SHOULDER];
+        elbow = landmarks[LANDMARKS.LEFT_ELBOW];
+        wrist = landmarks[LANDMARKS.LEFT_WRIST];
+      } else {
+        hip = landmarks[LANDMARKS.RIGHT_HIP];
+        shoulder = landmarks[LANDMARKS.RIGHT_SHOULDER];
+        elbow = landmarks[LANDMARKS.RIGHT_ELBOW];
+        wrist = landmarks[LANDMARKS.RIGHT_WRIST];
+      }
+
+      if (!isReliable(hip) || !isReliable(shoulder) || !isReliable(elbow) || !isReliable(wrist)) {
+        this.lastWristY = null;
+        rawFeedback = { errorType: "POSITIONING", message: "Ponte de perfil" };
+      } else {
+        if (this.lastWristY === null) {
+          this.lastWristY = wrist.y;
+          this.lastMovementTime = timestamp;
+        } else {
+          if (Math.abs(wrist.y - this.lastWristY) > this.WRIST_MOVEMENT_THRESHOLD) {
+            this.lastWristY = wrist.y;
+            this.lastMovementTime = timestamp;
+          } else if (timestamp - this.lastMovementTime > this.INACTIVITY_TIMEOUT_MS) {
+            rawFeedback = { errorType: "POSITIONING", message: "No se detecta movimiento" };
+          }
+        }
+
+        if (rawFeedback === null) {
+          const rom = this.checkROM(shoulder, elbow, wrist, width, height);
+          if (rom != null) {
+            this.lastConfirmedFeedback = rom;
+            this.pendingFeedback = rom;
+            return rom;
+          }
+
+          const balanceo = this.checkBalanceo(hip, shoulder, isFacingLeft, width, height);
+          if (balanceo != null) {
+            rawFeedback = balanceo;
+          } else {
+            const posicionCodo = this.checkPosicionCodo(hip, shoulder, elbow, isFacingLeft, width, height);
+            if (posicionCodo != null) {
+              rawFeedback = posicionCodo;
+            }
+          }
+        }
       }
     }
 
-    /* Realizamos la comprobación de ROM, balanceo y posicion del codo en orden de prioridad para dar el 
-     feedback más relevante al usuario */
-    const rom = this.checkROM(shoulder, elbow, wrist, width, height);
-    if (rom != null) {
-      this.pendingError = null; // Limpiamos debounce porque ROM es sticky
-      return rom;
+    if (rawFeedback === null) {
+      rawFeedback = { errorType: "OK", message: "Perfecto" };
     }
-    const balanceo = this.checkBalanceo(
-      hip,
-      shoulder,
-      isFacingLeft,
-      width,
-      height,
-    );
-    if (balanceo != null) {
-      return this.debounceError(balanceo, timestamp);
-    }
-    const posicionCodo = this.checkPosicionCodo(
-      hip,
-      shoulder,
-      elbow,
-      isFacingLeft,
-      width,
-      height,
-    );
-    if (posicionCodo != null) {
-      return this.debounceError(posicionCodo, timestamp);
-    }
-    
-    // Si llegamos acá sin retornar, no hay errores continuos activos
-    this.pendingError = null;
 
-    // Si no hay errores activos y se completaron correctamente ambas fases, contamos una repetición
-    if (this.concentricSuccess && this.excentricSuccess) {
-      this.repetitionCounter += 1;
+    const confirmed = this.debounceFeedback(rawFeedback, timestamp);
+
+    if (confirmed.errorType === "OK") {
+      if (this.concentricSuccess && this.excentricSuccess) {
+        this.repetitionCounter += 1;
+        this.concentricSuccess = false;
+        this.excentricSuccess = false;
+      }
+    } else {
       this.concentricSuccess = false;
       this.excentricSuccess = false;
     }
-    return null;
+
+    return confirmed;
   }
 }
