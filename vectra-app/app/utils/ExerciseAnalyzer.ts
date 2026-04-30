@@ -73,7 +73,7 @@ export class SquatAnalyzer {
   private readonly ROM_FLEXION_TARGET = 95; // La cadera debe bajar hasta al menos 95°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
-
+  private kneeLocked = false; // Las rodillas no se deben bloquear
   // Variables para detectar inactividad
   private lastHipY: number | null = null;
   private lastMovementTime: number = 0;
@@ -276,12 +276,14 @@ export class SquatAnalyzer {
 
   // Método para analizar el bloqueo de rodillas
   private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
-    // Solo advertir si estamos subiendo, estamos arriba (>170), y venimos de hacer una bajada real (<150)
+    // Solo advertir si estamos subiendo, estamos arriba (>170), y venimos de hacer una bajada real (<150) O si ya estamos bloqueados y seguimos arriba de 170
     if (
-      this.currentPhase === "ECCENTRIC" &&
-      currentAngle > 170 &&
-      this.minAngleReached < 150
+      (this.currentPhase === "ECCENTRIC" &&
+        currentAngle > 170 &&
+        this.minAngleReached < 150) ||
+      (this.kneeLocked && currentAngle > 170)
     ) {
+      this.kneeLocked = true;
       return {
         errorType: "TECHNICAL",
         exercise: "SQUAT",
@@ -289,6 +291,7 @@ export class SquatAnalyzer {
         message: "Evita bloquear las rodillas al subir",
       };
     }
+    this.kneeLocked = false;
     return null;
   }
 
