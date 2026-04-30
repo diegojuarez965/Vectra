@@ -416,7 +416,10 @@ export class SquatAnalyzer {
         this.concentricSuccess = false;
         this.excentricSuccess = false;
       }
-    } else {
+    } else if (
+      // Solo penalizamos si hay un error confirmado y luego no hay corrección
+      rawFeedback.errorType !== "OK"
+    ) {
       this.concentricSuccess = false;
       this.excentricSuccess = false;
     }
@@ -809,7 +812,10 @@ export class BicepCurlAnalyzer {
         this.concentricSuccess = false;
         this.excentricSuccess = false;
       }
-    } else {
+    } else if (
+      // Solo penalizamos si hay un error confirmado y luego no hay corrección
+      rawFeedback.errorType !== "OK"
+    ) {
       this.concentricSuccess = false;
       this.excentricSuccess = false;
     }
