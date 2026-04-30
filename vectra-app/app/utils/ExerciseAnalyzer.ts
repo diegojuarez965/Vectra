@@ -406,12 +406,10 @@ export class SquatAnalyzer {
         this.concentricSuccess = false;
         this.excentricSuccess = false;
       }
-    }
-    {
+    } else {
       this.concentricSuccess = false;
       this.excentricSuccess = false;
     }
-
     return confirmed;
   }
 }
