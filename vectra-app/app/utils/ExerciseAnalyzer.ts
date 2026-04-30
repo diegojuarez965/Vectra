@@ -289,7 +289,7 @@ export class SquatAnalyzer {
         };
       }
     } else {
-      if (this.concentricSuccess && currentAngle > 170) {
+      if (this.currentPhase === "ECCENTRIC" && currentAngle > 170) {
         this.isKneeLocked = true;
         return {
           errorType: "TECHNICAL",
