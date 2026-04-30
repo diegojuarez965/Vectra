@@ -79,7 +79,6 @@ export class SquatAnalyzer {
   private lastMovementTime: number = 0;
   private readonly INACTIVITY_TIMEOUT_MS = 5000; // 5 segundos sin movimiento
   private readonly HIP_MOVEMENT_THRESHOLD = 0.05; // Umbral de movimiento en Y
-  private isKneeLocked: boolean = false; // Estado del bloqueo de rodilla
 
   // Variables para debounce de errores
   private pendingFeedback: ExerciseFeedback | null = null;
@@ -277,27 +276,18 @@ export class SquatAnalyzer {
 
   // Método para analizar el bloqueo de rodillas
   private checkKneeLocked(currentAngle: number): ExerciseFeedback | null {
-    if (this.isKneeLocked) {
-      if (currentAngle < 165) {
-        this.isKneeLocked = false;
-      } else {
-        return {
-          errorType: "TECHNICAL",
-          exercise: "SQUAT",
-          error: "KNEE_LOCKED",
-          message: "Evita bloquear las rodillas al subir",
-        };
-      }
-    } else {
-      if (this.currentPhase === "ECCENTRIC" && currentAngle > 170) {
-        this.isKneeLocked = true;
-        return {
-          errorType: "TECHNICAL",
-          exercise: "SQUAT",
-          error: "KNEE_LOCKED",
-          message: "Evita bloquear las rodillas al subir",
-        };
-      }
+    // Solo advertir si estamos subiendo, estamos arriba (>170), y venimos de hacer una bajada real (<150)
+    if (
+      this.currentPhase === "ECCENTRIC" &&
+      currentAngle > 170 &&
+      this.minAngleReached < 150
+    ) {
+      return {
+        errorType: "TECHNICAL",
+        exercise: "SQUAT",
+        error: "KNEE_LOCKED",
+        message: "Evita bloquear las rodillas al subir",
+      };
     }
     return null;
   }
@@ -416,10 +406,8 @@ export class SquatAnalyzer {
         this.concentricSuccess = false;
         this.excentricSuccess = false;
       }
-    } else if (
-      // Solo penalizamos si hay un error confirmado y luego no hay corrección
-      rawFeedback.errorType !== "OK"
-    ) {
+    }
+    {
       this.concentricSuccess = false;
       this.excentricSuccess = false;
     }
@@ -812,14 +800,10 @@ export class BicepCurlAnalyzer {
         this.concentricSuccess = false;
         this.excentricSuccess = false;
       }
-    } else if (
-      // Solo penalizamos si hay un error confirmado y luego no hay corrección
-      rawFeedback.errorType !== "OK"
-    ) {
+    } else {
       this.concentricSuccess = false;
       this.excentricSuccess = false;
     }
-
     return confirmed;
   }
 }
