@@ -1,13 +1,8 @@
-import NextAuth from "next-auth";
-import { authConfig } from "./auth.config";
 import { auth } from "./auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-// Middleware de autenticación de NextAuth
-export default NextAuth(authConfig).auth;
-
-export async function middleware(req: NextRequest) {
-  const session = await auth();
+export default auth((req) => {
+  const session = req.auth;
   const url = req.nextUrl.clone();
   const pathname = req.nextUrl.pathname;
 
@@ -59,7 +54,7 @@ export async function middleware(req: NextRequest) {
   }
 
   return NextResponse.next();
-}
+});
 
 // Matcher para definir qué rutas pasan por el middleware
 export const config = {

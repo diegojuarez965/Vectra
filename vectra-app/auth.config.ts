@@ -6,7 +6,20 @@ export const authConfig = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 días de persistencia
+    maxAge: 30 * 24 * 60 * 60, // Hace que el token JWT persista
+  },
+  cookies: {
+    csrfToken: {
+      options: {
+        maxAge: 30 * 24 * 60 * 60, // Hace que el token CSRF persista
+      },
+    },
+    callbackUrl: {
+      options: {
+        maxAge: 30 * 24 * 60 * 60, // Hace que la URL de callback persista
+      },
+    },
+    // El sessionToken ya toma el maxAge de la configuración de 'session' automáticamente
   },
   callbacks: {
     // Default callbacks
