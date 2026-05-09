@@ -13,6 +13,9 @@ export default auth((req) => {
   const isOnUsers = pathname.startsWith("/vectra/users");
   const isOnLoginSuccess = pathname === "/login-success";
   const isOnSuspendido = pathname === "/suspendido";
+  const isOnLogin = pathname === "/login";
+  const isOnRegister = pathname === "/register";
+  const isRoot = pathname === "/";
 
   const requiresAuth =
     isOnAdmin || isOnUsers || isOnLoginSuccess || isOnSuspendido;
@@ -25,10 +28,11 @@ export default auth((req) => {
 
   if (!session) return NextResponse.next();
 
-  // Extraemos variables usando encadenamiento opcional para evitar fallos si user no está
+  // Extraemos variables usando encadenamiento opcional
   const active = session.user?.active;
   const role = session.user?.rol;
 
+  // 1. Validar si está suspendido
   if (!active && !isOnSuspendido) {
     url.pathname = "/suspendido";
     return NextResponse.redirect(url);
@@ -39,7 +43,8 @@ export default auth((req) => {
     return NextResponse.redirect(url);
   }
 
-  if (isOnLoginSuccess) {
+  // 2. Si hay sesión y está en la raíz, login, register o login-success, redirigir según su rol
+  if (isRoot || isOnLogin || isOnRegister || isOnLoginSuccess) {
     url.pathname = role === "admin" ? "/vectra/admin" : "/vectra/users";
     return NextResponse.redirect(url);
   }
