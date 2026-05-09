@@ -29,7 +29,6 @@ export async function middleware(req: NextRequest) {
   if (!session) return NextResponse.next(); // acceso libre al resto
 
   const active = session.user.active;
-  console.log("El usuario está activo: ", active);
   const role = session.user.rol;
 
   if (!active && !isOnSuspendido) {

@@ -4,7 +4,13 @@ import type {
   SerwistGlobalConfig,
   RuntimeCaching,
 } from "serwist";
-import { Serwist, CacheFirst, NetworkFirst, ExpirationPlugin, CacheableResponsePlugin } from "serwist";
+import {
+  Serwist,
+  CacheFirst,
+  NetworkFirst,
+  ExpirationPlugin,
+  CacheableResponsePlugin,
+} from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -51,7 +57,7 @@ const customCaching: RuntimeCaching[] = [
       plugins: [
         new ExpirationPlugin({
           maxEntries: 50,
-          maxAgeSeconds: 24 * 60 * 60, // Mantenemos en caché por 1 día como respaldo offline
+          maxAgeSeconds: 30 * 24 * 60 * 60, // Mantenemos en caché por 30 días para no perder la sesión offline
         }),
       ],
       networkTimeoutSeconds: 5, // Si el servidor no responde en 5 segundos, sirve el caché

@@ -4,6 +4,10 @@ export const authConfig = {
   pages: {
     signIn: "/login", // Custom sign-in page
   },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 días de persistencia
+  },
   callbacks: {
     // Default callbacks
     authorized() {
