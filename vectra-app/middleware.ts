@@ -1,12 +1,14 @@
-import { auth } from "./auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 import { NextResponse } from "next/server";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const session = req.auth;
   const url = req.nextUrl.clone();
   const pathname = req.nextUrl.pathname;
 
-  // Rutas protegidas según rol
   const isOnAdmin = pathname.startsWith("/vectra/admin");
   const isOnUsers = pathname.startsWith("/vectra/users");
   const isOnLoginSuccess = pathname === "/login-success";
@@ -15,16 +17,17 @@ export default auth((req) => {
   const requiresAuth =
     isOnAdmin || isOnUsers || isOnLoginSuccess || isOnSuspendido;
 
-  // Redirección a login si no hay sesión en rutas protegidas
+  // Redirección a login si no hay sesión
   if (!session && requiresAuth) {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (!session) return NextResponse.next(); // acceso libre al resto
+  if (!session) return NextResponse.next();
 
-  const active = session.user.active;
-  const role = session.user.rol;
+  // Extraemos variables usando encadenamiento opcional para evitar fallos si user no está
+  const active = session.user?.active;
+  const role = session.user?.rol;
 
   if (!active && !isOnSuspendido) {
     url.pathname = "/suspendido";
@@ -36,13 +39,11 @@ export default auth((req) => {
     return NextResponse.redirect(url);
   }
 
-  // Redirección post-login según rol
   if (isOnLoginSuccess) {
     url.pathname = role === "admin" ? "/vectra/admin" : "/vectra/users";
     return NextResponse.redirect(url);
   }
 
-  // Acceso restringido según rol
   if (isOnAdmin && role !== "admin") {
     url.pathname = "/vectra/users";
     return NextResponse.redirect(url);
@@ -56,7 +57,6 @@ export default auth((req) => {
   return NextResponse.next();
 });
 
-// Matcher para definir qué rutas pasan por el middleware
 export const config = {
   matcher: [
     "/login-success",
