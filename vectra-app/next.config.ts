@@ -1,4 +1,15 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
+
+// Configuramos las opciones principales del Service Worker
+const withSerwist = withSerwistInit({
+  // La ruta del sw
+  swSrc: "app/sw.ts",
+  // La ruta del archivo final compilado para que el navegador lo lea
+  swDest: "public/sw.js",
+  // Desactivamos el caché en desarrollo para que no interfiera con pruebas locales
+  disable: process.env.NODE_ENV === "development",
+});
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -21,4 +32,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

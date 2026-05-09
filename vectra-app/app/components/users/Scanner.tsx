@@ -220,7 +220,7 @@ export default function Scanner({
       try {
         // Descargar los archivos WASM necesarios
         const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm",
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm",
         );
         // Cargar el modelo de Pose Landmarker
         const landmarker = await PoseLandmarker.createFromOptions(vision, {

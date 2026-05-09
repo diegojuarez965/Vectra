@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "./components/Footer";
@@ -17,10 +17,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Configuración de Viewport obligatoria para PWA en móviles
+export const viewport: Viewport = {
+  themeColor: "#ff5722",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
+// Metadata con los requisitos de PWA
 export const metadata: Metadata = {
   title: {
     template: "%s | Vectra",
     default: "Vectra",
+  },
+  description:
+    "Análisis biomecánico en tiempo real y corrección postural con IA.",
+  icons: {
+    apple: "/images/vectra-logo-192x192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Vectra",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -39,6 +62,7 @@ export default async function RootLayout({
       showMaintenanceScreen = true;
     }
   }
+
   if (showMaintenanceScreen) {
     return (
       <html lang="es">
@@ -50,6 +74,7 @@ export default async function RootLayout({
       </html>
     );
   }
+
   return (
     <html lang="es">
       <body
