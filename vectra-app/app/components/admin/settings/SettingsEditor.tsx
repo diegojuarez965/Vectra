@@ -7,6 +7,7 @@ import MaintenanceModeWrapper from "./MaintenanceModeWrapper";
 import NoRegisterModeWrapper from "./NoRegisterModeWrapper";
 import RetentionDaysWrapper from "./RetentionDaysWrapper";
 import MaxTimeAnalysisWrapper from "./MaxTimeAnalysisWrapper";
+import GlobalMessagingForm from "./GlobalMessagingForm";
 
 export default function SettingsEditor() {
   return (
@@ -97,13 +98,7 @@ export default function SettingsEditor() {
               4. Mensajería Global
             </h2>
           </div>
-          <div className="group relative overflow-hidden rounded-xl border border-foreground/10 bg-foreground/5 p-6 transition-all hover:border-foreground/20">
-            <textarea
-              rows={3}
-              placeholder="Escribe un mensaje..."
-              className="w-full bg-background/50 border border-foreground/10 rounded-lg p-3 text-sm text-foreground resize-none"
-            />
-          </div>
+          <GlobalMessagingForm />
         </section>
       </div>
     </div>

@@ -713,6 +713,35 @@ export async function removeNotificationSubscription(token: string, userID: stri
   }
 }
 
+// Enviar notificación global a los usuarios (Requiere permisos de Admin)
+export async function sendGlobalNotification(title: string, body: string, role: string) {
+  if (!title || !body || !role) {
+    return { success: false, message: "Faltan parámetros requeridos." };
+  }
+
+  try {
+    const res = await fetch(`${baseUrl}/api/notifications/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, body, role }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return { success: false, message: data?.error || "Error al enviar la notificación." };
+    }
+
+    const data = await res.json();
+    return { 
+      success: true, 
+      message: `¡Notificación enviada con éxito a ${data.successCount} dispositivos!` 
+    };
+  } catch (error) {
+    console.error("Error en sendGlobalNotification:", error);
+    return { success: false, message: "Error de conexión con la API." };
+  }
+}
+
 export async function submitChatbotMessage(message: string) {
   // Validamos los parámetros
   const validatedData = SubmitChatbotMessageSchema.safeParse({ message });
