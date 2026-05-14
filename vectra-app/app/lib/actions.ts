@@ -651,6 +651,68 @@ export async function submitRepetitions(
   }
 }
 
+// Suscribirse a notificaciones
+export async function subscribeToNotifications(token: string, userID: string) {
+  if (!token || !userID) {
+    return { success: false, message: "Faltan parámetros requeridos." };
+  }
+
+  try {
+    const res = await fetch(`${baseUrl}/api/notifications`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, userID }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return {
+        success: false,
+        message: data?.error || "Error al suscribirse.",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Suscrito correctamente a las notificaciones.",
+    };
+  } catch (error) {
+    console.error("Error en subscribeToNotifications:", error);
+    return { success: false, message: "Error de conexión con la API." };
+  }
+}
+
+// Desuscribirse de notificaciones
+export async function removeNotificationSubscription(token: string, userID: string) {
+  if (!token || !userID) {
+    return { success: false, message: "Faltan parámetros requeridos." };
+  }
+
+  try {
+    const res = await fetch(`${baseUrl}/api/notifications`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, userID }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return {
+        success: false,
+        message: data?.error || "Error al desuscribirse en la base de datos.",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Suscripción eliminada correctamente.",
+    };
+  } catch (error) {
+    console.error("Error en removeNotificationSubscription:", error);
+    return { success: false, message: "Error de conexión con la API." };
+  }
+}
+
 export async function submitChatbotMessage(message: string) {
   // Validamos los parámetros
   const validatedData = SubmitChatbotMessageSchema.safeParse({ message });

@@ -7,7 +7,7 @@ const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   // La ruta del archivo final compilado para que el navegador lo lea
   swDest: "public/sw.js",
-  // Desactivamos el caché en desarrollo para que no interfiera con pruebas locales
+  // Desactivamos el SW en desarrollo para que no interfiera con pruebas locales
   disable: process.env.NODE_ENV === "development",
 });
 

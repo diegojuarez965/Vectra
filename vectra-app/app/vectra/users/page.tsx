@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import UserDashboard from "@/app/components/users/UserDashboard";
 import { getRetentionDays } from "@/app/lib/data";
 import Chatbox from "@/app/components/users/Chatbox";
+import NotificationButton from "@/app/components/users/NotificationButton";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,9 @@ export default async function UsersPage() {
           <p className="mt-1 text-foreground/80">
             Tu cuerpo es una máquina. Vamos a calibrarla.
           </p>
+        </div>
+        <div className="flex items-center">
+          <NotificationButton userID={userID} />
         </div>
       </div>
 

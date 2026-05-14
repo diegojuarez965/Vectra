@@ -91,6 +91,18 @@ async function seedRepetitions() {
   `;
 }
 
+// Crea tabla de tokens de notificaciones push
+async function seedFCMTokens() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS fcm_tokens (
+      id SERIAL PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `;
+}
+
 // Ruta para sembrar la base de datos
 export async function GET() {
   try {
@@ -100,6 +112,7 @@ export async function GET() {
       await seedSystemSettings(),
       await seedFeedbacks(),
       await seedRepetitions(),
+      await seedFCMTokens(),
     ]);
 
     return Response.json({ message: "Database seeded successfully" });

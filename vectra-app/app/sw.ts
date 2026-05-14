@@ -1,3 +1,5 @@
+/// <reference lib="webworker" />
+
 import { defaultCache } from "@serwist/next/worker";
 import type {
   PrecacheEntry,
@@ -11,6 +13,8 @@ import {
   ExpirationPlugin,
   CacheableResponsePlugin,
 } from "serwist";
+import { initializeApp } from "firebase/app";
+import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -18,7 +22,7 @@ declare global {
   }
 }
 
-declare const self: WorkerGlobalScope;
+declare const self: ServiceWorkerGlobalScope;
 
 // Definición de las reglas de caché
 const customCaching: RuntimeCaching[] = [
@@ -78,3 +82,31 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+// Inicializamos Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const messaging = getMessaging(firebaseApp);
+
+// Escuchamos los mensajes en segundo plano
+onBackgroundMessage(messaging, (payload) => {
+  console.log("Recibido mensaje en segundo plano:", payload);
+
+  const notificationTitle =
+    payload.notification?.title || "Notificación de Vectra";
+  const notificationOptions = {
+    body: payload.notification?.body || "Tienes un nuevo mensaje.",
+    icon: "/images/vectra-logo-512x512.png",
+    badge: "/images/vectra-logo-192x192.png",
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
