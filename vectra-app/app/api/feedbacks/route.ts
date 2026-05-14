@@ -102,12 +102,14 @@ export async function POST(req: Request) {
     }
 
     // Formateamos los datos para la DB
-    const rowsToInsert = feedbacks.map((feedback) => ({
-      user_id: userID,
-      exercise: feedback.exercise,
-      error: feedback.error,
-      date: new Date(),
-    }));
+    const rowsToInsert = feedbacks.map(
+      (feedback: { exercise: string; error: string }) => ({
+        user_id: userID,
+        exercise: feedback.exercise,
+        error: feedback.error,
+        date: new Date(),
+      }),
+    );
 
     // Insertamos los feedbacks en la base de datos
     await sql`
