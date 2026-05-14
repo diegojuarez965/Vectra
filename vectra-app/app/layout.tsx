@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "./components/Footer";
+import PushNotificationListener from "./components/PushNotificationListener";
 
 import { getMaintenanceMode } from "@/app/lib/data";
 import { auth } from "@/auth";
@@ -80,6 +81,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground antialiased flex flex-col min-h-screen`}
       >
+        <PushNotificationListener />
         <main className="grow">{children}</main>
         <Footer />
       </body>
