@@ -10,6 +10,7 @@ import {
   subscribeToNotifications,
   removeNotificationSubscription,
 } from "@/app/lib/actions";
+import { verifyNotificationSubscription } from "@/app/lib/data";
 
 export default function NotificationButton({ userID }: { userID: string }) {
   const [loading, setLoading] = useState(true);
@@ -29,15 +30,21 @@ export default function NotificationButton({ userID }: { userID: string }) {
           setIsSubscribed(false);
         } else {
           try {
-            // Buscamos si el Service Worker tiene una suscripción activa en este momento
-            const swRegistration = await navigator.serviceWorker.ready;
-            const subscription =
-              await swRegistration.pushManager.getSubscription();
+            // Obtenemos el token almacenado en este navegador
+            const token = await requestNotificationPermission();
 
-            // Si existe la suscripción, está activo. Si es null, está desuscrito.
-            setIsSubscribed(!!subscription);
+            if (token) {
+              // Verificamos en el servidor si este token le pertenece a este userID
+              const res = await verifyNotificationSubscription(token, userID);
+              setIsSubscribed(res.isSubscribed);
+            } else {
+              setIsSubscribed(false);
+            }
           } catch (error) {
-            console.error("Error al verificar la suscripción:", error);
+            console.error(
+              "Error al verificar la suscripción en el backend:",
+              error,
+            );
             setIsSubscribed(false);
           }
         }
@@ -46,7 +53,7 @@ export default function NotificationButton({ userID }: { userID: string }) {
     };
 
     checkSubscriptionStatus();
-  }, []);
+  }, [userID]);
 
   const handleToggle = async () => {
     setLoading(true);

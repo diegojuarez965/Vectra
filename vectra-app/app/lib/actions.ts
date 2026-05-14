@@ -683,7 +683,10 @@ export async function subscribeToNotifications(token: string, userID: string) {
 }
 
 // Desuscribirse de notificaciones
-export async function removeNotificationSubscription(token: string, userID: string) {
+export async function removeNotificationSubscription(
+  token: string,
+  userID: string,
+) {
   if (!token || !userID) {
     return { success: false, message: "Faltan parámetros requeridos." };
   }
@@ -714,7 +717,11 @@ export async function removeNotificationSubscription(token: string, userID: stri
 }
 
 // Enviar notificación global a los usuarios (Requiere permisos de Admin)
-export async function sendGlobalNotification(title: string, body: string, role: string) {
+export async function sendGlobalNotification(
+  title: string,
+  body: string,
+  role: string,
+) {
   if (!title || !body || !role) {
     return { success: false, message: "Faltan parámetros requeridos." };
   }
@@ -728,13 +735,16 @@ export async function sendGlobalNotification(title: string, body: string, role: 
 
     if (!res.ok) {
       const data = await res.json();
-      return { success: false, message: data?.error || "Error al enviar la notificación." };
+      return {
+        success: false,
+        message: data?.error || "Error al enviar la notificación.",
+      };
     }
 
     const data = await res.json();
-    return { 
-      success: true, 
-      message: `¡Notificación enviada con éxito a ${data.successCount} dispositivos!` 
+    return {
+      success: true,
+      message: `¡Notificación enviada con éxito a ${data.successCount} dispositivos!`,
     };
   } catch (error) {
     console.error("Error en sendGlobalNotification:", error);

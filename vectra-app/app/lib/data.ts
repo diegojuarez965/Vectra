@@ -389,12 +389,15 @@ export async function getUsersMetrics(date?: string) {
   try {
     const params = new URLSearchParams();
     if (date) params.append("date", date);
-    
-    const res = await fetch(`${baseUrl}/api/users-metrics?${params.toString()}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-    });
+
+    const res = await fetch(
+      `${baseUrl}/api/users-metrics?${params.toString()}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      },
+    );
 
     if (!res.ok) return null;
 
@@ -402,5 +405,28 @@ export async function getUsersMetrics(date?: string) {
   } catch (error) {
     console.error("Error obteniendo métricas de usuarios:", error);
     return null;
+  }
+}
+
+// Verificar si el usuario actual es el dueño del token en este navegador
+export async function verifyNotificationSubscription(
+  token: string,
+  userID: string,
+) {
+  if (!token || !userID) return { isSubscribed: false };
+
+  try {
+    const res = await fetch(
+      `${baseUrl}/api/notifications/verify?token=${encodeURIComponent(token)}&userID=${encodeURIComponent(userID)}`,
+      { method: "GET" },
+    );
+
+    if (!res.ok) return { isSubscribed: false };
+
+    const data = await res.json();
+    return { isSubscribed: data.isSubscribed };
+  } catch (error) {
+    console.error("Error en verifyNotificationSubscription:", error);
+    return { isSubscribed: false };
   }
 }
