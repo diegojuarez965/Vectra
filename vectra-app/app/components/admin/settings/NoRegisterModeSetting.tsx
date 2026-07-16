@@ -43,7 +43,7 @@ export default function NoRegisterModeSetting({
           className={clsx(
             "w-10 h-5 rounded-full relative transition-colors duration-300 cursor-pointer",
             "focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400",
-            noRegisterActive ? "bg-red-400/5" : "bg-foreground/20",
+            noRegisterActive ? "bg-red-400" : "bg-foreground/20",
           )}
         >
           <span
