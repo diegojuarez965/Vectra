@@ -67,8 +67,8 @@ export class SquatAnalyzer {
   private excentricSuccess = false; // La fase excéntrica se completó correctamente
   private concentricSuccess = false; // La fase concéntrica se completó correctamente
   private prevAngle: number = 0; // Ángulo del frame anterior
-  private minAngleReached: number = 180; // Máxima extensión (arriba)
-  private maxAngleReached: number = 0; // Máxima flexión (abajo)
+  private minAngleReached: number = 180; // Máxima flexión (abajo)
+  private maxAngleReached: number = 0; // Máxima extensión (arriba)
   private readonly ROM_EXTENSION_TARGET = 135; // La cadera debe subir hasta al menos 135°
   private readonly ROM_FLEXION_TARGET = 90; // La cadera debe bajar hasta al menos 90°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
@@ -114,25 +114,10 @@ export class SquatAnalyzer {
 
     // Modo bloqueo: gestión de errores activos
     if (this.currentErrorFase !== null) {
-      if (this.currentErrorFase === "CONCENTRIC") {
+      if (this.currentErrorFase === "ECCENTRIC") {
         // Error: No bajó suficiente.
         // Salida: El usuario corrigió y bajó más (<= 90).
         if (currentAngle <= this.ROM_FLEXION_TARGET) {
-          this.currentErrorFase = null; // Error resuelto
-          this.concentricSuccess = true;
-        } else {
-          // Mantener error
-          feedback = {
-            errorType: "TECHNICAL",
-            exercise: "SQUAT",
-            error: "NO_ROM_CONCENTRIC",
-            message: "Baja más la cadera",
-          };
-        }
-      } else if (this.currentErrorFase === "ECCENTRIC") {
-        // Error: No subió suficiente.
-        // Salida: El usuario corrigió y subió más (>= 135).
-        if (currentAngle >= this.ROM_EXTENSION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.excentricSuccess = true;
         } else {
@@ -141,6 +126,21 @@ export class SquatAnalyzer {
             errorType: "TECHNICAL",
             exercise: "SQUAT",
             error: "NO_ROM_ECCENTRIC",
+            message: "Baja más la cadera",
+          };
+        }
+      } else if (this.currentErrorFase === "CONCENTRIC") {
+        // Error: No subió suficiente.
+        // Salida: El usuario corrigió y subió más (>= 135).
+        if (currentAngle >= this.ROM_EXTENSION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.concentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "SQUAT",
+            error: "NO_ROM_CONCENTRIC",
             message: "Sube más la cadera",
           };
         }
@@ -153,10 +153,10 @@ export class SquatAnalyzer {
 
     // Modo normal: detección de fases
 
-    // CASO A: Fase Excéntrica detectada
+    // CASO A: Fase Concéntrica detectada
     if (currentAngle > this.prevAngle + this.MOVEMENT_THRESHOLD) {
-      // Si venimos de una fase concéntrica, validamos la amplitud y posibles errores antes de cambiar a excéntrica
-      if (this.currentPhase === "CONCENTRIC") {
+      // Si venimos de una fase excéntrica, validamos la amplitud y posibles errores antes de cambiar a concéntrica
+      if (this.currentPhase === "ECCENTRIC") {
         // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
         const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
         if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
@@ -165,28 +165,28 @@ export class SquatAnalyzer {
             feedback = {
               errorType: "TECHNICAL",
               exercise: "SQUAT",
-              error: "NO_ROM_CONCENTRIC",
+              error: "NO_ROM_ECCENTRIC",
               message: "Baja más la cadera",
             };
             // Activamos el bloqueo
-            this.currentErrorFase = "CONCENTRIC";
+            this.currentErrorFase = "ECCENTRIC";
           } else {
             // Éxito en la bajada
-            this.concentricSuccess = true;
+            this.excentricSuccess = true;
           }
         }
         this.maxAngleReached = currentAngle; // Actualizamos referencia
       }
 
-      this.currentPhase = "ECCENTRIC"; // Actualizamos fase
+      this.currentPhase = "CONCENTRIC"; // Actualizamos fase
       this.maxAngleReached = Math.max(this.maxAngleReached, currentAngle); // Actualizamos referencia
       this.prevAngle = currentAngle; // Actualizamos referencia
     }
 
-    // CASO B: Fase Concéntrica detectada
+    // CASO B: Fase Excéntrica detectada
     else if (currentAngle < this.prevAngle - this.MOVEMENT_THRESHOLD) {
-      // Si venimos de una fase excéntrica, validamos la amplitud y posibles errores antes de cambiar a concéntrica
-      if (this.currentPhase === "ECCENTRIC") {
+      // Si venimos de una fase concéntrica, validamos la amplitud y posibles errores antes de cambiar a excéntrica
+      if (this.currentPhase === "CONCENTRIC") {
         // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
         const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
         if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
@@ -195,20 +195,20 @@ export class SquatAnalyzer {
             feedback = {
               errorType: "TECHNICAL",
               exercise: "SQUAT",
-              error: "NO_ROM_ECCENTRIC",
+              error: "NO_ROM_CONCENTRIC",
               message: "Sube más la cadera",
             };
             // Activamos el bloqueo
-            this.currentErrorFase = "ECCENTRIC";
+            this.currentErrorFase = "CONCENTRIC";
           } else {
             // Éxito en la subida
-            this.excentricSuccess = true;
+            this.concentricSuccess = true;
           }
         }
         this.minAngleReached = currentAngle; // Actualizamos referencia
       }
 
-      this.currentPhase = "CONCENTRIC"; // Actualizamos fase
+      this.currentPhase = "ECCENTRIC"; // Actualizamos fase
       this.minAngleReached = Math.min(this.minAngleReached, currentAngle); // Actualizamos referencia
       this.prevAngle = currentAngle; // Actualizamos referencia
     }
@@ -305,7 +305,7 @@ export class SquatAnalyzer {
     else {
       // Solo advertir si estamos subiendo, estamos arriba (>170), y venimos de hacer una bajada (incluso superficial, <165)
       if (
-        this.currentPhase === "ECCENTRIC" &&
+        this.currentPhase === "CONCENTRIC" &&
         currentAngle > 170 &&
         this.minAngleReached < 165
       ) {
