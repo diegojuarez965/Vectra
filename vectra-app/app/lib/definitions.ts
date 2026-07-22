@@ -2,6 +2,7 @@
 export const EXERCISE_LABELS = {
   BICEP_CURL: "Curl de Bíceps",
   SQUAT: "Sentadilla",
+  DEADLIFT: "Peso Muerto",
 } as const;
 
 export const ERROR_LABELS = {
@@ -10,6 +11,10 @@ export const ERROR_LABELS = {
   NO_ROM_CONCENTRIC: "Fase concéntrica incompleta",
   FORWARD_FRONT: "Inclinación hacia adelante",
   FORWARD_BACK: "Inclinación hacia atrás",
+  // Errores de Peso Muerto
+  BAR_DRIFT: "Barra alejada del cuerpo",
+  KNEE_OVERFLEXION: "Rodillas sobre-flexionadas",
+  BACK_ROUNDING: "Espalda encorvada",
   // Errores de Curl
   ELBOW_BACK: "Codo atrasado",
   ELBOW_FRONT: "Codo adelantado",

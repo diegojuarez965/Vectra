@@ -22,7 +22,7 @@ import {
   Volume2,
   Pause,
 } from "lucide-react";
-import { BicepCurlAnalyzer, SquatAnalyzer } from "@/app/utils/ExerciseAnalyzer";
+import * as Analyzers from "@/app/utils/ExerciseAnalyzer";
 import { Exercise, ExerciseFeedback } from "@/app/lib/definitions";
 
 // Conexiones del esqueleto relevantes
@@ -76,7 +76,7 @@ export default function Scanner({
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null); // Modelo de IA
   const requestRef = useRef<number>(0); // Referencia para requestAnimationFrame
   const prevLandmarksRef = useRef<NormalizedLandmark[] | null>(null); // Últimos puntos detectados
-  const analyzerRef = useRef<BicepCurlAnalyzer | SquatAnalyzer | null>(null); // Referencia al analizador
+  const analyzerRef = useRef<Analyzers.BaseExerciseAnalyzer | null>(null); // Referencia al analizador
   const lastFeedbackRef = useRef<ExerciseFeedback | null>(null); // Referencia al feedback anterior
   const feedbackCooldownRef = useRef<number>(0); // Rerencia al tiempo del último error para dar tiempo a corregir la técnica
   const COOLDOWN_MS = 3000; // 3 segundos de pausa
@@ -107,16 +107,23 @@ export default function Scanner({
   const isMirrored = mode === "live" && facingMode === "user"; // Espejado solo en modo "live" y cámara frontal
 
   // Inicializar el analizador de ejercicio
+
+  // Transforma, por ejemplo, BICEP_CURL -> BicepCurlAnalyzer
   useEffect(() => {
-    switch (exercise) {
-      case "BICEP_CURL":
-        analyzerRef.current = new BicepCurlAnalyzer();
-        break;
-      case "SQUAT":
-        analyzerRef.current = new SquatAnalyzer();
-        break;
-      default:
-        analyzerRef.current = new BicepCurlAnalyzer();
+    const className = (exercise
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join("") + "Analyzer") as keyof typeof Analyzers;
+
+    // Accedemos al constructor de la clase dinámicamente 
+    const AnalyzerClass = Analyzers[className] as new () => Analyzers.BaseExerciseAnalyzer;
+
+    if (AnalyzerClass) {
+      // Crea una nueva instancia del analizador
+      analyzerRef.current = new AnalyzerClass();
+    } else {
+      // Si no se encuentra el analizador, se asigna el de Bicep Curl por defecto
+      analyzerRef.current = new Analyzers.BicepCurlAnalyzer();
     }
   }, [exercise]);
 
@@ -489,11 +496,10 @@ export default function Scanner({
       // Al hacer click en el contenedor, mostramos/ocultamos controles
       onClick={() => setShowControls((prev) => !prev)}
       className={`bg-black/20 overflow-hidden shadow-2xl group transition-all duration-300 border-none
-      ${
-        isFullscreen
+      ${isFullscreen
           ? "fixed inset-0 z-100 w-screen h-dvh rounded-none"
           : "relative w-full h-full rounded-xl"
-      }`}
+        }`}
       // Evita scroll accidental en móvil fullscreen
       style={{ touchAction: isFullscreen ? "none" : "auto" }}
     >
