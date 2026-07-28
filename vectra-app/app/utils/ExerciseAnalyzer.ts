@@ -259,12 +259,187 @@ export abstract class BaseExerciseAnalyzer {
 }
 
 export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
+  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
+  private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
+  private prevAngle: number = 0; // Ángulo del frame anterior
+  private minAngleReached: number = 180; // Máxima flexión (abajo)
+  private maxAngleReached: number = 0; // Máxima extensión (arriba)
+  private barErrorActive: boolean = false; // Indica si la barra está alejada del cuerpo
+  private readonly ROM_EXTENSION_TARGET = 160; // El torso debe subir hasta al menos 160°
+  private readonly ROM_FLEXION_TARGET = 90; // El torso debe bajar hasta al menos 90°
+  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
+  private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
+
+  // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
+  private checkROM(currentAngle: number): ExerciseFeedback | null {
+    let feedback: ExerciseFeedback | null = null;
+
+    // Modo bloqueo: gestión de errores activos
+    if (this.currentErrorFase !== null) {
+      if (this.currentErrorFase === "ECCENTRIC") {
+        // Error: No bajó suficiente.
+        // Salida: El usuario corrigió y bajó más (<= 90).
+        if (currentAngle <= this.ROM_FLEXION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.excentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "DEADLIFT",
+            error: "NO_ROM_ECCENTRIC",
+            message: "Baja más el torso",
+          };
+        }
+      } else if (this.currentErrorFase === "CONCENTRIC") {
+        // Error: No subió suficiente.
+        // Salida: El usuario corrigió y subió más (>= 160).
+        if (currentAngle >= this.ROM_EXTENSION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.concentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "DEADLIFT",
+            error: "NO_ROM_CONCENTRIC",
+            message: "Sube más el torso",
+          };
+        }
+      }
+
+      // Mientras estamos en error, seguimos actualizando el ángulo previo
+      this.prevAngle = currentAngle;
+      return feedback;
+    }
+
+    // Modo normal: detección de fases
+
+    // CASO A: Fase Concéntrica detectada
+    if (currentAngle > this.prevAngle + this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase excéntrica, validamos la amplitud y posibles errores antes de cambiar a concéntrica
+      if (this.currentPhase === "ECCENTRIC") {
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
+        const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
+        if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
+          // Validamos la bajada anterior
+          if (this.minAngleReached > this.ROM_FLEXION_TARGET) {
+            feedback = {
+              errorType: "TECHNICAL",
+              exercise: "DEADLIFT",
+              error: "NO_ROM_ECCENTRIC",
+              message: "Baja más el torso",
+            };
+            // Activamos el bloqueo
+            this.currentErrorFase = "ECCENTRIC";
+          } else {
+            // Éxito en la bajada
+            this.excentricSuccess = true;
+          }
+        }
+        this.maxAngleReached = currentAngle; // Actualizamos referencia
+      }
+
+      this.currentPhase = "CONCENTRIC"; // Actualizamos fase
+      this.maxAngleReached = Math.max(this.maxAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
+    }
+
+    // CASO B: Fase Excéntrica detectada
+    else if (currentAngle < this.prevAngle - this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase concéntrica, validamos la amplitud y posibles errores antes de cambiar a excéntrica
+      if (this.currentPhase === "CONCENTRIC") {
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
+        const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
+        if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
+          // Validamos la subida anterior
+          if (this.maxAngleReached < this.ROM_EXTENSION_TARGET) {
+            feedback = {
+              errorType: "TECHNICAL",
+              exercise: "DEADLIFT",
+              error: "NO_ROM_CONCENTRIC",
+              message: "Sube más el torso",
+            };
+            // Activamos el bloqueo
+            this.currentErrorFase = "CONCENTRIC";
+          } else {
+            // Éxito en la subida
+            this.concentricSuccess = true;
+          }
+        }
+        this.minAngleReached = currentAngle; // Actualizamos referencia
+      }
+
+      this.currentPhase = "ECCENTRIC"; // Actualizamos fase
+      this.minAngleReached = Math.min(this.minAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
+    }
+
+    return feedback;
+  }
+
+  // Método para verificar la posición de la barra respecto al cuerpo
+  private checkBarPosition(
+    shoulder: NormalizedLandmark,
+    wrist: NormalizedLandmark,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null {
+    const vertical: NormalizedLandmark = {
+      x: shoulder.x,
+      y: 0.0,
+      z: 0.0,
+      visibility: 1.0,
+    };
+
+    // Calcular el ángulo de separación entre la vertical y la muñeca respecto al hombro
+    const separationAngle = this.calculateAngle(
+      vertical,
+      shoulder,
+      wrist,
+      width,
+      height,
+    );
+
+    // Modo bloqueo
+    if (this.barErrorActive) {
+      // Desactivamos el bloqueo si bajamos corrigiendo el error
+      if (this.currentPhase === "ECCENTRIC" && separationAngle > 165) {
+        this.barErrorActive = false;
+      }
+      // Si bajamos y no corregimos el error, devolvemos error
+      return {
+        errorType: "TECHNICAL",
+        exercise: "DEADLIFT",
+        error: "BAR_DRIFT",
+        message: "Mantén la barra cerca de tus piernas",
+      };
+    }
+    // Modo detección de bloqueo
+    else {
+      if (
+        this.currentPhase === "ECCENTRIC" &&
+        separationAngle <= 165
+      ) {
+        this.barErrorActive = true; // Activamos el bloqueo
+        return {
+          errorType: "TECHNICAL",
+          exercise: "DEADLIFT",
+          error: "BAR_DRIFT",
+          message: "Mantén la barra cerca de tus piernas",
+        };
+      }
+      this.barErrorActive = false; // No detectamos bloqueo
+      return null;
+    }
+  }
+
   protected getRequiredJoints(): string[] {
     return ["SHOULDER", "WRIST", "HIP", "KNEE", "ANKLE"];
   }
 
   protected getInactivityReference(joints: Record<string, NormalizedLandmark>): number {
-    return joints.hip.y;
+    return joints.wrist.y;
   }
 
   protected analyzeTechnical(
@@ -274,22 +449,21 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     height: number,
   ): TechnicalAnalysisResult {
     const { shoulder, wrist, hip, knee, ankle } = joints;
-    console.log("shoulder ", shoulder)
-    console.log("wrist ", wrist)
-    console.log("hip ", hip)
-    console.log("knee ", knee)
-    console.log("ankle ", ankle)
-    console.log("facingLeft ", facingLeft)
-    console.log("width ", width)
-    console.log("height ", height)
-    /* Deteccion de errores por prioridad (aún no implementada)
-    Ejemplo:
-    1. ROM
+    console.log("Ankle: ", ankle);
+    console.log("FacingLeft: ", facingLeft);
+    const currentAngle = this.calculateAngle(shoulder, hip, knee, width, height);
+    // 1. ROM
     const rom = this.checkROM(currentAngle);
     if (rom != null) {
       return { feedback: rom, shouldDebounce: false };
     }
-    */
+
+    // 2. Check Bar Position
+    const barPosition = this.checkBarPosition(shoulder, wrist, width, height);
+    if (barPosition != null) {
+      return { feedback: barPosition, shouldDebounce: false };
+    }
+
     return null;
   }
 }
