@@ -63,7 +63,7 @@ export default function LiveScanner({
   const [isTimeUp, setIsTimeUp] = useState(false);
 
   // Estado para el Mute
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
 
   // Hook de voz
   const { speak, cancel } = useTextToSpeech();
@@ -177,12 +177,12 @@ export default function LiveScanner({
         if (repeticiones === 0) {
           textToSpeak =
             INITIAL_MESSAGES[
-              Math.floor(Math.random() * INITIAL_MESSAGES.length)
+            Math.floor(Math.random() * INITIAL_MESSAGES.length)
             ];
         } else {
           textToSpeak =
             POSITIVE_MESSAGES[
-              Math.floor(Math.random() * POSITIVE_MESSAGES.length)
+            Math.floor(Math.random() * POSITIVE_MESSAGES.length)
             ];
         }
       }
@@ -286,10 +286,9 @@ export default function LiveScanner({
               disabled={isSaving}
               className={`
                 cursor-pointer px-6 py-4 font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)] flex items-center justify-center gap-2
-                ${
-                  isSaving
-                    ? "bg-gray-500/50 text-gray-300 cursor-not-allowed"
-                    : "bg-primary hover:bg-primary/80 text-foreground hover:scale-105"
+                ${isSaving
+                  ? "bg-gray-500/50 text-gray-300 cursor-not-allowed"
+                  : "bg-primary hover:bg-primary/80 text-foreground hover:scale-105"
                 }
               `}
             >
@@ -367,10 +366,9 @@ export default function LiveScanner({
                 disabled={isSaving} // Deshabilitar si está guardando
                 className={`
                   cursor-pointer flex items-center gap-2 px-4 py-2 border rounded-xl transition-all text-xs font-bold uppercase tracking-wider
-                  ${
-                    isSaving
-                      ? "bg-gray-500/10 border-gray-500/20 text-gray-400"
-                      : "bg-red-400/5 hover:bg-red-400/10 border-red-400/20 text-red-400 hover:scale-105 shadow-lg shadow-red-400/10 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400"
+                  ${isSaving
+                    ? "bg-gray-500/10 border-gray-500/20 text-gray-400"
+                    : "bg-red-400/5 hover:bg-red-400/10 border-red-400/20 text-red-400 hover:scale-105 shadow-lg shadow-red-400/10 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400"
                   }
                 `}
               >
@@ -414,12 +412,11 @@ export default function LiveScanner({
                 <div
                   className={`
                     mx-auto w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 md:mb-4 border shadow-[0_0_20px_rgba(0,0,0,0.2)]
-                    ${
-                      currentFeedback.errorType === "SYSTEM"
-                        ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
-                        : currentFeedback.errorType === "POSITIONING"
-                          ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                          : "bg-red-400/5 text-red-400 border-red-400/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                    ${currentFeedback.errorType === "SYSTEM"
+                      ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                      : currentFeedback.errorType === "POSITIONING"
+                        ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                        : "bg-red-400/5 text-red-400 border-red-400/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
                     }
                   `}
                 >
@@ -439,23 +436,21 @@ export default function LiveScanner({
                 <div
                   className={`
                     border rounded-xl p-3 md:p-4 mt-2
-                    ${
-                      currentFeedback.errorType === "SYSTEM"
-                        ? "bg-blue-500/5 border-blue-500/10"
-                        : currentFeedback.errorType === "POSITIONING"
-                          ? "bg-yellow-500/5 border-yellow-500/10"
-                          : "bg-red-400/5 border-red-400/20"
+                    ${currentFeedback.errorType === "SYSTEM"
+                      ? "bg-blue-500/5 border-blue-500/10"
+                      : currentFeedback.errorType === "POSITIONING"
+                        ? "bg-yellow-500/5 border-yellow-500/10"
+                        : "bg-red-400/5 border-red-400/20"
                     }
                   `}
                 >
                   <p
                     className={`text-xs md:text-sm font-medium 
-                      ${
-                        currentFeedback.errorType === "SYSTEM"
-                          ? "text-blue-200/90"
-                          : currentFeedback.errorType === "POSITIONING"
-                            ? "text-yellow-200/90"
-                            : "text-red-400"
+                      ${currentFeedback.errorType === "SYSTEM"
+                        ? "text-blue-200/90"
+                        : currentFeedback.errorType === "POSITIONING"
+                          ? "text-yellow-200/90"
+                          : "text-red-400"
                       }`}
                   >
                     {currentFeedback.message}
