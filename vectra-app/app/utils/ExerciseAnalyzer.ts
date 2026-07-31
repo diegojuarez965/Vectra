@@ -41,7 +41,7 @@ const LANDMARKS = {
 const VISIBILITY_THRESHOLD = 0.65;
 
 // Tiempo en ms para confirmar el feedback
-const DEBOUNCE_MS = 1000;
+const DEBOUNCE_MS = 300;
 
 // Constantes de inactividad
 const INACTIVITY_TIMEOUT_MS = 5000;
@@ -267,10 +267,13 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
   private barErrorActive: boolean = false; // Indica si la barra está alejada del cuerpo
   private lumbarErrorActive: boolean = false; // Indica si hay hiperextensión lumbar
   private kneeOverflexionActive: boolean = false; // Indica si hay sobre-flexión de rodillas
+  private backRoundingActive: boolean = false; // Indica si hay curvatura de la espalda
   private readonly ROM_EXTENSION_TARGET = 160; // El torso debe subir hasta al menos 160°
   private readonly ROM_FLEXION_TARGET = 90; // El torso debe bajar hasta al menos 90°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
+  private lastHipY: number | null = null; // Coordenada Y de la cadera en el frame anterior
+  private lastShoulderY: number | null = null; // Coordenada Y del hombro en el frame anterior
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(currentAngle: number): ExerciseFeedback | null {
@@ -403,8 +406,8 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     );
     // Modo bloqueo
     if (this.barErrorActive) {
-      // Desactivamos el bloqueo si mientras bajamos acercamos la barra lo suficiente
-      if (this.currentPhase === "ECCENTRIC" && separationAngle > 165) {
+      // Desactivamos el bloqueo si acercamos la barra lo suficiente
+      if (separationAngle > 160) {
         this.barErrorActive = false;
         return null;
       }
@@ -418,10 +421,10 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     }
     // Modo detección de bloqueo
     else {
-      // Si estamos bajando y la barra se separa demasiado del cuerpo, activamos el bloqueo
+      // Si la barra se separa demasiado del cuerpo durante el movimiento activo, activamos el bloqueo
       if (
-        this.currentPhase === "ECCENTRIC" &&
-        separationAngle <= 165
+        (this.currentPhase === "CONCENTRIC" || this.currentPhase === "ECCENTRIC") &&
+        separationAngle <= 160
       ) {
         this.barErrorActive = true;
         return {
@@ -443,11 +446,27 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     hip: NormalizedLandmark,
     facingLeft: boolean,
     width: number,
+    height: number,
   ): ExerciseFeedback | null {
+    // Calculamos la longitud del torso en píxeles
+    const dx = (shoulder.x - hip.x) * width;
+    const dy = (shoulder.y - hip.y) * height;
+    const torsoLength = Math.sqrt(dx * dx + dy * dy);
+    // Definimos el umbral dinámico como el 15% de la longitud del torso
+    const threshold = torsoLength * 0.15;
+
+    const shoulderX = shoulder.x * width;
+    const hipX = hip.x * width;
+
+    // Evaluamos si el torso está arqueado hacia atrás
+    const isLeaningBack = facingLeft
+      ? (shoulderX > hipX + threshold)
+      : (shoulderX < hipX - threshold);
+
     // Modo bloqueo
     if (this.lumbarErrorActive) {
-      // Desactivamos el bloqueo si el torso vuelve a bajar lo suficiente
-      if (this.currentPhase === "ECCENTRIC" && this.minAngleReached < 150) {
+      // Desactivamos el bloqueo si el torso vuelve a una posición segura o baja lo suficiente en fase excéntrica
+      if (!isLeaningBack || (this.currentPhase === "ECCENTRIC" && this.minAngleReached < 150)) {
         this.lumbarErrorActive = false;
         return null;
       }
@@ -467,10 +486,8 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
         currentAngle > 170 &&
         this.minAngleReached < 165
       ) {
-        const hipX = hip.x * width;
-        const shoulderX = shoulder.x * width;
         // Si además está arqueado hacia atrás, activamos el bloqueo
-        if ((facingLeft && shoulderX > hipX + 30) || (!facingLeft && shoulderX < hipX - 30)) {
+        if (isLeaningBack) {
           this.lumbarErrorActive = true;
           return {
             errorType: "TECHNICAL",
@@ -493,10 +510,13 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     width: number,
     height: number,
   ): ExerciseFeedback | null {
+    // Calculamos el ángulo entre la cadera, la rodilla y el tobillo
+    const currentAngle = this.calculateAngle(hip, knee, ankle, width, height);
+
     // Modo bloqueo
     if (this.kneeOverflexionActive) {
-      if (this.currentPhase === "CONCENTRIC" && this.maxAngleReached > 160) {
-        // Desactivamos el bloqueo si subimos lo suficiente
+      // Desactivamos el bloqueo si las rodillas se extienden lo suficiente (> 160°)
+      if (currentAngle > 160) {
         this.kneeOverflexionActive = false;
         return null;
       }
@@ -510,11 +530,9 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     }
     // Modo detección de bloqueo
     else {
-      // Calculamos el ángulo entre la cadera, la rodilla y el tobillo
-      const currentAngle = this.calculateAngle(hip, knee, ankle, width, height)
-      // Si estamos bajando y pasamos de 95 grados, activamos el bloqueo
+      // Si la rodilla se flexiona demasiado durante las fases activas, activamos el bloqueo
       if (
-        this.currentPhase === "ECCENTRIC" &&
+        (this.currentPhase === "CONCENTRIC" || this.currentPhase === "ECCENTRIC") &&
         currentAngle < 95
       ) {
         this.kneeOverflexionActive = true;
@@ -529,6 +547,62 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
       return null;
     }
   }
+
+  // Método para analizar espalda encorvada
+  private checkBackRounding(
+    shoulder: NormalizedLandmark,
+    hip: NormalizedLandmark,
+    height: number,
+  ): ExerciseFeedback | null {
+    const hipY = hip.y * height;
+    const shoulderY = shoulder.y * height;
+    // Si no tenemos datos previos de la cadera o del hombro, los guardamos y salimos
+    if (this.lastHipY === null) {
+      this.lastHipY = hipY;
+      return null;
+    }
+    if (this.lastShoulderY === null) {
+      this.lastShoulderY = shoulderY;
+      return null;
+    }
+
+    // Modo bloqueo
+    if (this.backRoundingActive) {
+      if (this.currentPhase === "ECCENTRIC" && this.maxAngleReached > 160) {
+        // Desactivamos el bloqueo si subimos lo suficiente
+        this.backRoundingActive = false;
+        return null;
+      }
+      // Sino devolvemos el error
+      return {
+        errorType: "TECHNICAL",
+        exercise: "DEADLIFT",
+        error: "BACK_ROUNDING",
+        message: "Mantén la espalda recta",
+      };
+    }
+
+    // Modo detección
+    // Calcular la distancia recorrida por la cadera y los hombros
+    const distanciaHipY = Math.abs(this.lastHipY - hipY);
+    const distanciaShoulderY = Math.abs(this.lastShoulderY - shoulderY);
+
+    // Actualizamos los valores previos
+    this.lastHipY = hipY;
+    this.lastShoulderY = shoulderY;
+
+    // Si la cadera asciende el doble o más rápido que los hombros
+    if (this.currentPhase === "CONCENTRIC" && distanciaHipY >= distanciaShoulderY * 2) {
+      return {
+        errorType: "TECHNICAL",
+        exercise: "DEADLIFT",
+        error: "BACK_ROUNDING",
+        message: "Mantén la espalda recta",
+      };
+    }
+    return null;
+  }
+
 
   protected getRequiredJoints(): string[] {
     return ["SHOULDER", "WRIST", "HIP", "KNEE", "ANKLE"];
@@ -553,23 +627,37 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
       return { feedback: rom, shouldDebounce: false };
     }
 
-    // 2. Check Bar Position
-    const barPosition = this.checkBarPosition(shoulder, wrist, width, height);
-    if (barPosition != null) {
-      return { feedback: barPosition, shouldDebounce: false };
+    // 2. Check Lumbar Hyperextension
+    const lumbarHyperextension = this.checkLumbarHyperextension(
+      currentAngle,
+      shoulder,
+      hip,
+      facingLeft,
+      width,
+      height,
+    );
+    if (lumbarHyperextension != null) {
+      return { feedback: lumbarHyperextension, shouldDebounce: true };
     }
 
-    // 3. Check Lumbar Hyperextension
-    const lumbarHyperextension = this.checkLumbarHyperextension(currentAngle, shoulder, hip, facingLeft, width);
-    if (lumbarHyperextension != null) {
-      return { feedback: lumbarHyperextension, shouldDebounce: false };
+    // 3. Check Bar Position
+    const barPosition = this.checkBarPosition(shoulder, wrist, width, height);
+    if (barPosition != null) {
+      return { feedback: barPosition, shouldDebounce: true };
     }
 
     // 4. Check Knee Overflexion
     const kneeOverflexion = this.checkKneeOverflexion(hip, knee, ankle, width, height);
     if (kneeOverflexion != null) {
-      return { feedback: kneeOverflexion, shouldDebounce: false };
+      return { feedback: kneeOverflexion, shouldDebounce: true };
     }
+
+    /* 5. Check Back Rounding
+    const backRounding = this.checkBackRounding(shoulder, hip, height);
+    if (backRounding != null) {
+      return { feedback: backRounding, shouldDebounce: false };
+    }
+    */
 
     return null;
   }
