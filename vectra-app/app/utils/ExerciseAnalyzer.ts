@@ -267,13 +267,10 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
   private barErrorActive: boolean = false; // Indica si la barra está alejada del cuerpo
   private lumbarErrorActive: boolean = false; // Indica si hay hiperextensión lumbar
   private kneeOverflexionActive: boolean = false; // Indica si hay sobre-flexión de rodillas
-  private backRoundingActive: boolean = false; // Indica si hay curvatura de la espalda
   private readonly ROM_EXTENSION_TARGET = 160; // El torso debe subir hasta al menos 160°
   private readonly ROM_FLEXION_TARGET = 90; // El torso debe bajar hasta al menos 90°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
-  private lastHipY: number | null = null; // Coordenada Y de la cadera en el frame anterior
-  private lastShoulderY: number | null = null; // Coordenada Y del hombro en el frame anterior
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(currentAngle: number): ExerciseFeedback | null {
