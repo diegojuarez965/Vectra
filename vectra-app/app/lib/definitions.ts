@@ -14,7 +14,6 @@ export const ERROR_LABELS = {
   // Errores de Peso Muerto
   BAR_DRIFT: "Barra alejada del cuerpo",
   KNEE_OVERFLEXION: "Rodillas sobre-flexionadas",
-  BACK_ROUNDING: "Espalda encorvada",
   LUMBAR_HYPEREXTENSION: "Hiperextensión lumbar",
   // Errores de Curl
   ELBOW_BACK: "Codo atrasado",
