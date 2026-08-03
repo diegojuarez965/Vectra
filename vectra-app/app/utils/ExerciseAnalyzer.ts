@@ -548,62 +548,6 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     }
   }
 
-  // Método para analizar espalda encorvada
-  private checkBackRounding(
-    shoulder: NormalizedLandmark,
-    hip: NormalizedLandmark,
-    height: number,
-  ): ExerciseFeedback | null {
-    const hipY = hip.y * height;
-    const shoulderY = shoulder.y * height;
-    // Si no tenemos datos previos de la cadera o del hombro, los guardamos y salimos
-    if (this.lastHipY === null) {
-      this.lastHipY = hipY;
-      return null;
-    }
-    if (this.lastShoulderY === null) {
-      this.lastShoulderY = shoulderY;
-      return null;
-    }
-
-    // Modo bloqueo
-    if (this.backRoundingActive) {
-      if (this.currentPhase === "ECCENTRIC" && this.maxAngleReached > 160) {
-        // Desactivamos el bloqueo si subimos lo suficiente
-        this.backRoundingActive = false;
-        return null;
-      }
-      // Sino devolvemos el error
-      return {
-        errorType: "TECHNICAL",
-        exercise: "DEADLIFT",
-        error: "BACK_ROUNDING",
-        message: "Mantén la espalda recta",
-      };
-    }
-
-    // Modo detección
-    // Calcular la distancia recorrida por la cadera y los hombros
-    const distanciaHipY = Math.abs(this.lastHipY - hipY);
-    const distanciaShoulderY = Math.abs(this.lastShoulderY - shoulderY);
-
-    // Actualizamos los valores previos
-    this.lastHipY = hipY;
-    this.lastShoulderY = shoulderY;
-
-    // Si la cadera asciende el doble o más rápido que los hombros
-    if (this.currentPhase === "CONCENTRIC" && distanciaHipY >= distanciaShoulderY * 2) {
-      return {
-        errorType: "TECHNICAL",
-        exercise: "DEADLIFT",
-        error: "BACK_ROUNDING",
-        message: "Mantén la espalda recta",
-      };
-    }
-    return null;
-  }
-
-
   protected getRequiredJoints(): string[] {
     return ["SHOULDER", "WRIST", "HIP", "KNEE", "ANKLE"];
   }
@@ -651,13 +595,6 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     if (kneeOverflexion != null) {
       return { feedback: kneeOverflexion, shouldDebounce: true };
     }
-
-    /* 5. Check Back Rounding
-    const backRounding = this.checkBackRounding(shoulder, hip, height);
-    if (backRounding != null) {
-      return { feedback: backRounding, shouldDebounce: false };
-    }
-    */
 
     return null;
   }
