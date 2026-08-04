@@ -41,7 +41,7 @@ const LANDMARKS = {
 const VISIBILITY_THRESHOLD = 0.65;
 
 // Tiempo en ms para confirmar el feedback
-const DEBOUNCE_MS = 300;
+const DEBOUNCE_MS = 500;
 
 // Constantes de inactividad
 const INACTIVITY_TIMEOUT_MS = 5000;
@@ -855,7 +855,7 @@ export class SquatAnalyzer extends BaseExerciseAnalyzer {
     // 3. Knee locked
     const kneeLocked = this.checkKneeLocked(currentAngle);
     if (kneeLocked != null) {
-      return { feedback: kneeLocked, shouldDebounce: false };
+      return { feedback: kneeLocked, shouldDebounce: true };
     }
 
     return null;
