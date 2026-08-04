@@ -855,7 +855,7 @@ export class SquatAnalyzer extends BaseExerciseAnalyzer {
     // 3. Knee locked
     const kneeLocked = this.checkKneeLocked(currentAngle);
     if (kneeLocked != null) {
-      return { feedback: kneeLocked, shouldDebounce: true };
+      return { feedback: kneeLocked, shouldDebounce: false };
     }
 
     return null;
