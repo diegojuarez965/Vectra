@@ -35,6 +35,7 @@ const INITIAL_MESSAGES = [
   "Prepárate para sudar",
 ];
 const POSITIVE_MESSAGES = ["Excelente", "Muy bien", "Perfecto", "Bien hecho"];
+const POST_ERROR_MESSAGES = ["Tú puedes", "Vamos", "Sigue así", "Buena corrección"];
 
 export default function LiveScanner({
   confidenceThreshold,
@@ -67,6 +68,9 @@ export default function LiveScanner({
 
   // Hook de voz
   const { speak, cancel } = useTextToSpeech();
+
+  // Referencia para trackear el tipo de error anterior y detectar correcciones
+  const previousFeedbackTypeRef = useRef<string | null>(null);
 
   // Handlers para los botones
   const handleStart = () => {
@@ -165,27 +169,46 @@ export default function LiveScanner({
 
       let textToSpeak = "";
       // Feedback del sistema no se puede hablar
-      if (currentFeedback?.errorType === "SYSTEM") return;
+      if (currentFeedback?.errorType === "SYSTEM") {
+        previousFeedbackTypeRef.current = "SYSTEM";
+        return;
+      }
+
       // Caso error técnico o de posicionamiento
-      else if (
+      if (
         currentFeedback?.errorType === "TECHNICAL" ||
         currentFeedback?.errorType === "POSITIONING"
-      )
+      ) {
         textToSpeak = currentFeedback.message;
+      }
       // Caso OK
       else if (currentFeedback?.errorType === "OK") {
         if (repeticiones === 0) {
           textToSpeak =
             INITIAL_MESSAGES[
-            Math.floor(Math.random() * INITIAL_MESSAGES.length)
+              Math.floor(Math.random() * INITIAL_MESSAGES.length)
             ];
         } else {
-          textToSpeak =
-            POSITIVE_MESSAGES[
-            Math.floor(Math.random() * POSITIVE_MESSAGES.length)
-            ];
+          // Si el último error fue técnico y ahora es OK, se motiva al usuario
+          if (previousFeedbackTypeRef.current === "TECHNICAL") {
+            textToSpeak =
+              POST_ERROR_MESSAGES[
+                Math.floor(Math.random() * POST_ERROR_MESSAGES.length)
+              ];
+          } else {
+            textToSpeak =
+              POSITIVE_MESSAGES[
+                Math.floor(Math.random() * POSITIVE_MESSAGES.length)
+              ];
+          }
         }
       }
+
+      // Guardar el tipo actual para el siguiente ciclo
+      if (currentFeedback?.errorType) {
+        previousFeedbackTypeRef.current = currentFeedback.errorType;
+      }
+
       if (textToSpeak) speak(textToSpeak);
     };
 
