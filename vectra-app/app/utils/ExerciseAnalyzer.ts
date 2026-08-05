@@ -1141,3 +1141,233 @@ export class BicepCurlAnalyzer extends BaseExerciseAnalyzer {
     return null;
   }
 }
+
+export class FrenchPressAnalyzer extends BaseExerciseAnalyzer {
+  private prevAngle: number = 0; // Ángulo del frame anterior
+  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
+  private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
+  private minAngleReached: number = 180; // Máxima flexión (arriba)
+  private maxAngleReached: number = 0; // Máxima extensión (abajo)
+  private readonly ROM_EXTENSION_TARGET = 160; // El brazo debe subir hasta al menos 160°
+  private readonly ROM_FLEXION_TARGET = 80; // El brazo debe bajar hasta al menos 80°
+  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
+  private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
+
+  // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
+  private checkROM(
+    shoulder: NormalizedLandmark,
+    elbow: NormalizedLandmark,
+    wrist: NormalizedLandmark,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null {
+    // Calculamos el ángulo entre el hombro y la muñeca con vértice en el codo para determinar la flexión del brazo
+    const currentAngle = this.calculateAngle(
+      shoulder,
+      elbow,
+      wrist,
+      width,
+      height,
+    );
+
+    let feedback: ExerciseFeedback | null = null;
+
+    // Modo bloqueo: gestión de errores activos
+    if (this.currentErrorFase !== null) {
+      if (this.currentErrorFase === "ECCENTRIC") {
+        // Error: No bajó suficiente.
+        // Salida: El usuario corrigió y bajó más (<= 75).
+        if (currentAngle <= this.ROM_FLEXION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.excentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "FRENCH_PRESS",
+            error: "NO_ROM_ECCENTRIC",
+            message: "Flexiona más el brazo",
+          };
+        }
+      } else if (this.currentErrorFase === "CONCENTRIC") {
+        // Error: No subió suficiente.
+        // Salida: El usuario corrigió y subió más (>= 170).
+        if (currentAngle >= this.ROM_EXTENSION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.concentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "FRENCH_PRESS",
+            error: "NO_ROM_CONCENTRIC",
+            message: "Extiende más el brazo",
+          };
+        }
+      }
+
+      // Mientras estamos en error, seguimos actualizando el ángulo previo
+      this.prevAngle = currentAngle;
+      return feedback;
+    }
+
+    // Modo normal: detección de fases
+
+    // CASO A: Fase Concéntrica detectada
+    if (currentAngle > this.prevAngle + this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase excéntrica, validamos la amplitud y posibles errores antes de cambiar a concéntrica
+      if (this.currentPhase === "ECCENTRIC") {
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
+        const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
+        if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
+          // Validamos la bajada anterior
+          if (this.minAngleReached > this.ROM_FLEXION_TARGET) {
+            feedback = {
+              errorType: "TECHNICAL",
+              exercise: "FRENCH_PRESS",
+              error: "NO_ROM_ECCENTRIC",
+              message: "Flexiona más el brazo",
+            };
+            // Activamos el bloqueo
+            this.currentErrorFase = "ECCENTRIC";
+          } else {
+            // Éxito en la bajada
+            this.excentricSuccess = true;
+          }
+        }
+        this.maxAngleReached = currentAngle; // Actualizamos referencia
+      }
+
+      this.currentPhase = "CONCENTRIC"; // Actualizamos fase
+      this.maxAngleReached = Math.max(this.maxAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
+    }
+
+    // CASO B: Fase Excéntrica detectada
+    else if (currentAngle < this.prevAngle - this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase concéntrica, validamos la amplitud y posibles errores antes de cambiar a excéntrica
+      if (this.currentPhase === "CONCENTRIC") {
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
+        const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
+        if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
+          // Validamos la subida anterior
+          if (this.maxAngleReached < this.ROM_EXTENSION_TARGET) {
+            feedback = {
+              errorType: "TECHNICAL",
+              exercise: "FRENCH_PRESS",
+              error: "NO_ROM_CONCENTRIC",
+              message: "Extiende más el brazo",
+            };
+            // Activamos el bloqueo
+            this.currentErrorFase = "CONCENTRIC";
+          } else {
+            // Éxito en la subida
+            this.concentricSuccess = true;
+          }
+        }
+        this.minAngleReached = currentAngle; // Actualizamos referencia
+      }
+
+      this.currentPhase = "ECCENTRIC"; // Actualizamos fase
+      this.minAngleReached = Math.min(this.minAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
+    }
+
+    return feedback;
+  }
+
+  // Método para analizar el balanceo del cuerpo y detectar si se está balanceando hacia adelante o hacia atrás
+  private checkBalanceo = (
+    hip: NormalizedLandmark,
+    shoulder: NormalizedLandmark,
+    isFacingLeft: boolean,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null => {
+    const vertical: NormalizedLandmark = {
+      x: shoulder.x,
+      y: 0.0,
+      z: 0.0,
+      visibility: 1.0,
+    };
+
+    // Calcular el ángulo de separación entre la vertical y la cadera respecto al hombro
+    const separationAngle = this.calculateAngle(
+      vertical,
+      shoulder,
+      hip,
+      width,
+      height,
+    );
+    const DRIFT_THRESHOLD = 170.0;
+
+    // Si el ángulo de separación es menor a 170 grados, consideramos que el cuerpo se está moviendo fuera del plano ideal
+    if (separationAngle < DRIFT_THRESHOLD) {
+      const shoulderX = shoulder.x * width;
+      const hipX = hip.x * width;
+
+      let backBalanced = false;
+
+      if (isFacingLeft) {
+        backBalanced = hipX < shoulderX; // Si el usuario mira a la izquierda, el balanceo hacia atrás es cuando la coordenada X de la cadera es menor que la del hombro
+      } else {
+        backBalanced = hipX > shoulderX; // Si el usuario mira a la derecha, el balanceo hacia atrás es cuando la coordenada X de la cadera es mayor que la del hombro
+      }
+
+      if (backBalanced) {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "FRENCH_PRESS",
+          error: "FORWARD_BACK",
+          message: "No te balancees hacia atrás",
+        };
+      } else {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "FRENCH_PRESS",
+          error: "FORWARD_FRONT",
+          message: "No te balancees hacia adelante",
+        };
+      }
+    }
+
+    return null;
+  };
+
+  protected getRequiredJoints(): string[] {
+    return ["HIP", "SHOULDER", "ELBOW", "WRIST"];
+  }
+
+  protected getInactivityReference(joints: Record<string, NormalizedLandmark>): number {
+    return joints.wrist.x;
+  }
+
+  protected analyzeTechnical(
+    joints: Record<string, NormalizedLandmark>,
+    facingLeft: boolean,
+    width: number,
+    height: number,
+  ): TechnicalAnalysisResult {
+    const { shoulder, elbow, wrist, hip } = joints;
+
+    // 1. ROM
+    const rom = this.checkROM(shoulder, elbow, wrist, width, height);
+    if (rom != null) {
+      return { feedback: rom, shouldDebounce: false };
+    }
+
+    // 2. Balanceo (debounced)
+    const balanceo = this.checkBalanceo(
+      hip,
+      shoulder,
+      facingLeft,
+      width,
+      height,
+    );
+    if (balanceo != null) {
+      return { feedback: balanceo, shouldDebounce: true };
+    }
+
+    return null;
+  }
+}
