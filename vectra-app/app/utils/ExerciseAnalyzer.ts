@@ -384,26 +384,26 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
   private checkBarPosition(
     shoulder: NormalizedLandmark,
     hip: NormalizedLandmark,
+    knee: NormalizedLandmark,
     wrist: NormalizedLandmark,
     width: number,
     height: number,
   ): ExerciseFeedback | null {
-    // Calcular el ángulo de separación entre la cadera y la muñeca respecto al hombro
-    const separationAngle = this.calculateAngle(
-      hip,
-      shoulder,
-      wrist,
-      width,
-      height,
-    );
+    // 1. Calcular longitud del torso como referencia de escala
+    const dx = (shoulder.x - hip.x) * width;
+    const dy = (shoulder.y - hip.y) * height;
+    const torsoLength = Math.sqrt(dx * dx + dy * dy);
 
-    // Si el ángulo de separación es mayor a 25 grados, la barra está muy alejada
-    const MAX_SEPARATION_ANGLE = 25.0;
+    // 2. Calcular la distancia horizontal en píxeles entre la muñeca y la rodilla
+    const driftDistance = Math.abs(wrist.x - knee.x) * width;
+
+    // 3. Definir umbrales dinámicos basados en la longitud del torso
+    const MAX_DRIFT_THRESHOLD = torsoLength * 0.22; // Umbral de alerta (22% del torso)
+    const MIN_DRIFT_THRESHOLD = torsoLength * 0.15; // Umbral de histéresis para apagar la alerta
 
     // Modo bloqueo
     if (this.barErrorActive) {
-      // Desactivamos el bloqueo si el usuario vuelve a pegar la barra para dar histéresis
-      if (separationAngle < 20.0) {
+      if (driftDistance < MIN_DRIFT_THRESHOLD) {
         this.barErrorActive = false;
         return null;
       }
@@ -419,7 +419,7 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
       // Si la barra se separa demasiado del cuerpo durante el movimiento activo, activamos el bloqueo
       if (
         (this.currentPhase === "CONCENTRIC" || this.currentPhase === "ECCENTRIC") &&
-        separationAngle > MAX_SEPARATION_ANGLE
+        driftDistance > MAX_DRIFT_THRESHOLD
       ) {
         this.barErrorActive = true;
         return {
@@ -580,7 +580,7 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     }
 
     // 3. Check Bar Position
-    const barPosition = this.checkBarPosition(shoulder, hip, wrist, width, height);
+    const barPosition = this.checkBarPosition(shoulder, hip, knee, wrist, width, height);
     if (barPosition != null) {
       return { feedback: barPosition, shouldDebounce: true };
     }
