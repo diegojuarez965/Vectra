@@ -383,32 +383,30 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
   // Método para verificar la posición de la barra respecto al cuerpo
   private checkBarPosition(
     shoulder: NormalizedLandmark,
+    hip: NormalizedLandmark,
     wrist: NormalizedLandmark,
     width: number,
     height: number,
   ): ExerciseFeedback | null {
-    const vertical: NormalizedLandmark = {
-      x: shoulder.x,
-      y: 0.0,
-      z: 0.0,
-      visibility: 1.0,
-    };
-    // Calcular el ángulo de separación entre la vertical y la muñeca respecto al hombro
+    // Calcular el ángulo de separación entre la cadera y la muñeca respecto al hombro
     const separationAngle = this.calculateAngle(
-      vertical,
+      hip,
       shoulder,
       wrist,
       width,
       height,
     );
+
+    // Si el ángulo de separación es mayor a 25 grados, la barra está muy alejada
+    const MAX_SEPARATION_ANGLE = 25.0;
+
     // Modo bloqueo
     if (this.barErrorActive) {
-      // Desactivamos el bloqueo si acercamos la barra lo suficiente
-      if (separationAngle > 160) {
+      // Desactivamos el bloqueo si el usuario vuelve a pegar la barra para dar histéresis
+      if (separationAngle < 20.0) {
         this.barErrorActive = false;
         return null;
       }
-      // Sino devolvemos el error
       return {
         errorType: "TECHNICAL",
         exercise: "DEADLIFT",
@@ -421,7 +419,7 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
       // Si la barra se separa demasiado del cuerpo durante el movimiento activo, activamos el bloqueo
       if (
         (this.currentPhase === "CONCENTRIC" || this.currentPhase === "ECCENTRIC") &&
-        separationAngle <= 160
+        separationAngle > MAX_SEPARATION_ANGLE
       ) {
         this.barErrorActive = true;
         return {
@@ -582,7 +580,7 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     }
 
     // 3. Check Bar Position
-    const barPosition = this.checkBarPosition(shoulder, wrist, width, height);
+    const barPosition = this.checkBarPosition(shoulder, hip, wrist, width, height);
     if (barPosition != null) {
       return { feedback: barPosition, shouldDebounce: true };
     }

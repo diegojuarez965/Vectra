@@ -5,7 +5,7 @@ export const useTextToSpeech = () => {
   const isSpeakingRef = useRef<boolean>(false);
   const currentTextRef = useRef<string | null>(null);
 
-  const processQueueRef = useRef<() => void>(() => {});
+  const processQueueRef = useRef<() => void>(() => { });
 
   // Procesa la cola de mensajes de forma secuencial
   const processQueue = useCallback(() => {
