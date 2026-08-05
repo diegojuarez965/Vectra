@@ -3,7 +3,6 @@ export const EXERCISE_LABELS = {
   BICEP_CURL: "Curl de Bíceps",
   SQUAT: "Sentadilla",
   DEADLIFT: "Peso Muerto",
-  FRENCH_PRESS: "Press Francés",
 } as const;
 
 export const ERROR_LABELS = {
@@ -21,8 +20,6 @@ export const ERROR_LABELS = {
   ELBOW_FRONT: "Codo adelantado",
   // Errores de Sentadilla
   KNEE_LOCKED: "Rodillas bloqueadas",
-  // Errores de Press Francés
-  ELBOW_FORWARD: "Codos adelantados",
 } as const;
 
 // Interface de Usuario
