@@ -35,7 +35,7 @@ const INITIAL_MESSAGES = [
   "Prepárate para sudar",
 ];
 const POSITIVE_MESSAGES = ["Excelente", "Muy bien", "Perfecto", "Bien hecho"];
-const POST_ERROR_MESSAGES = ["Tú puedes", "Vamos", "Sigue así", "Buena corrección"];
+const POST_ERROR_MESSAGES = ["Tú puedes", "Vamos por más", "Sigamos mejorando", "Esa es la actitud"];
 
 export default function LiveScanner({
   confidenceThreshold,
@@ -186,19 +186,19 @@ export default function LiveScanner({
         if (repeticiones === 0) {
           textToSpeak =
             INITIAL_MESSAGES[
-              Math.floor(Math.random() * INITIAL_MESSAGES.length)
+            Math.floor(Math.random() * INITIAL_MESSAGES.length)
             ];
         } else {
           // Si el último error fue técnico y ahora es OK, se motiva al usuario
           if (previousFeedbackTypeRef.current === "TECHNICAL") {
             textToSpeak =
               POST_ERROR_MESSAGES[
-                Math.floor(Math.random() * POST_ERROR_MESSAGES.length)
+              Math.floor(Math.random() * POST_ERROR_MESSAGES.length)
               ];
           } else {
             textToSpeak =
               POSITIVE_MESSAGES[
-                Math.floor(Math.random() * POSITIVE_MESSAGES.length)
+              Math.floor(Math.random() * POSITIVE_MESSAGES.length)
               ];
           }
         }
