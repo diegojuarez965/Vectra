@@ -1149,7 +1149,7 @@ export class FrenchPressAnalyzer extends BaseExerciseAnalyzer {
   private minAngleReached: number = 180; // Máxima flexión (arriba)
   private maxAngleReached: number = 0; // Máxima extensión (abajo)
   private readonly ROM_EXTENSION_TARGET = 150; // El brazo debe extenderse hasta al menos 150°
-  private readonly ROM_FLEXION_TARGET = 70; // El brazo debe flexionar hasta al menos 70°
+  private readonly ROM_FLEXION_TARGET = 75; // El brazo debe flexionar hasta al menos 75°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
@@ -1176,7 +1176,7 @@ export class FrenchPressAnalyzer extends BaseExerciseAnalyzer {
     if (this.currentErrorFase !== null) {
       if (this.currentErrorFase === "ECCENTRIC") {
         // Error: No bajó suficiente.
-        // Salida: El usuario corrigió y bajó más (<= 70).
+        // Salida: El usuario corrigió y bajó más (<= 75).
         if (currentAngle <= this.ROM_FLEXION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.excentricSuccess = true;
