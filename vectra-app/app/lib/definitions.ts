@@ -3,19 +3,21 @@ export const EXERCISE_LABELS = {
   BICEP_CURL: "Curl de Bíceps",
   SQUAT: "Sentadilla",
   DEADLIFT: "Peso Muerto",
+  TRICEP_EXTENSION: "Extensión de Tríceps",
 } as const;
 
 export const ERROR_LABELS = {
   // Errores generales
   NO_ROM_ECCENTRIC: "Fase excéntrica incompleta",
   NO_ROM_CONCENTRIC: "Fase concéntrica incompleta",
+  // Errores de Curl de Bíceps, Extensión de Tríceps y Sentadilla
   FORWARD_FRONT: "Inclinación hacia adelante",
   FORWARD_BACK: "Inclinación hacia atrás",
   // Errores de Peso Muerto
   BAR_DRIFT: "Barra alejada del cuerpo",
   KNEE_OVERFLEXION: "Rodillas sobre-flexionadas",
   LUMBAR_HYPEREXTENSION: "Hiperextensión lumbar",
-  // Errores de Curl
+  // Errores de Curl de Bíceps y Extensión de Tríceps
   ELBOW_BACK: "Codo atrasado",
   ELBOW_FRONT: "Codo adelantado",
   // Errores de Sentadilla

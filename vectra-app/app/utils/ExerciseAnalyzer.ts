@@ -258,6 +258,299 @@ export abstract class BaseExerciseAnalyzer {
   }
 }
 
+export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
+  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
+  private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
+  private prevAngle: number = 0; // Ángulo del frame anterior
+  private minAngleReached: number = 180; // Máxima extensión del brazo (abajo)
+  private maxAngleReached: number = 0; // Máxima flexión del brazo (arriba)
+  private readonly ROM_EXTENSION_TARGET = 135; // El brazo debe bajar hasta al menos 135°
+  private readonly ROM_FLEXION_TARGET = 75; // El brazo debe subir hasta al menos 75°
+  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
+  private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
+
+  // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
+  private checkROM(
+    shoulder: NormalizedLandmark,
+    elbow: NormalizedLandmark,
+    wrist: NormalizedLandmark,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null {
+    // Calculamos el ángulo entre el hombro y la muñeca con vértice en el codo para determinar la flexión del brazo
+    const currentAngle = this.calculateAngle(shoulder, elbow, wrist, width, height);
+
+    let feedback: ExerciseFeedback | null = null;
+
+    // Modo bloqueo: gestión de errores activos
+    if (this.currentErrorFase !== null) {
+      if (this.currentErrorFase === "ECCENTRIC") {
+        // Error: No subió suficiente.
+        // Salida: El usuario corrigió y subió más (<= 75).
+        if (currentAngle <= this.ROM_FLEXION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.excentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "TRICEP_EXTENSION",
+            error: "NO_ROM_ECCENTRIC",
+            message: "Sube más el brazo",
+          };
+        }
+      } else if (this.currentErrorFase === "CONCENTRIC") {
+        // Error: No bajó suficiente.
+        // Salida: El usuario corrigió y bajó más (>= 135).
+        if (currentAngle >= this.ROM_EXTENSION_TARGET) {
+          this.currentErrorFase = null; // Error resuelto
+          this.concentricSuccess = true;
+        } else {
+          // Mantener error
+          feedback = {
+            errorType: "TECHNICAL",
+            exercise: "TRICEP_EXTENSION",
+            error: "NO_ROM_CONCENTRIC",
+            message: "Baja más el brazo",
+          };
+        }
+      }
+
+      // Mientras estamos en error, seguimos actualizando el ángulo previo
+      this.prevAngle = currentAngle;
+      return feedback;
+    }
+
+    // Modo normal: detección de fases
+
+    // CASO A: Fase Concéntrica detectada
+    if (currentAngle > this.prevAngle + this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase excéntrica, validamos la amplitud y posibles errores antes de cambiar a concéntrica
+      if (this.currentPhase === "ECCENTRIC") {
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
+        const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
+        if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
+          // Validamos la subida anterior
+          if (this.minAngleReached > this.ROM_FLEXION_TARGET) {
+            feedback = {
+              errorType: "TECHNICAL",
+              exercise: "TRICEP_EXTENSION",
+              error: "NO_ROM_ECCENTRIC",
+              message: "Sube más el brazo",
+            };
+            // Activamos el bloqueo
+            this.currentErrorFase = "ECCENTRIC";
+          } else {
+            // Éxito en la subida
+            this.excentricSuccess = true;
+          }
+        }
+        this.maxAngleReached = currentAngle; // Actualizamos referencia
+      }
+
+      this.currentPhase = "CONCENTRIC"; // Actualizamos fase
+      this.maxAngleReached = Math.max(this.maxAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
+    }
+
+    // CASO B: Fase Excéntrica detectada
+    else if (currentAngle < this.prevAngle - this.MOVEMENT_THRESHOLD) {
+      // Si venimos de una fase concéntrica, validamos la amplitud y posibles errores antes de cambiar a excéntrica
+      if (this.currentPhase === "CONCENTRIC") {
+        // Validamos la amplitud para evitar falsos positivos por pequeños movimientos o ruido
+        const amplitude = Math.abs(this.maxAngleReached - this.minAngleReached);
+        if (amplitude > this.MIN_AMPLITUDE_THRESHOLD) {
+          // Validamos la bajada anterior
+          if (this.maxAngleReached < this.ROM_EXTENSION_TARGET) {
+            feedback = {
+              errorType: "TECHNICAL",
+              exercise: "TRICEP_EXTENSION",
+              error: "NO_ROM_CONCENTRIC",
+              message: "Baja más el brazo",
+            };
+            // Activamos el bloqueo
+            this.currentErrorFase = "CONCENTRIC";
+          } else {
+            // Éxito en la bajada
+            this.concentricSuccess = true;
+          }
+        }
+        this.minAngleReached = currentAngle; // Actualizamos referencia
+      }
+
+      this.currentPhase = "ECCENTRIC"; // Actualizamos fase
+      this.minAngleReached = Math.min(this.minAngleReached, currentAngle); // Actualizamos referencia
+      this.prevAngle = currentAngle; // Actualizamos referencia
+    }
+
+    return feedback;
+  }
+
+  // Método para analizar el balanceo del cuerpo y detectar si se está balanceando hacia adelante o hacia atrás
+  private checkBalanceo = (
+    hip: NormalizedLandmark,
+    shoulder: NormalizedLandmark,
+    isFacingLeft: boolean,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null => {
+    const vertical: NormalizedLandmark = {
+      x: shoulder.x,
+      y: 0.0,
+      z: 0.0,
+      visibility: 1.0,
+    };
+
+    // Calcular el ángulo de separación entre la vertical y la cadera respecto al hombro
+    const separationAngle = this.calculateAngle(
+      vertical,
+      shoulder,
+      hip,
+      width,
+      height,
+    );
+
+    // Umbrales de tolerancia (180° es estar perfectamente recto)
+    const FRONT_DRIFT_THRESHOLD = 135.0; // Tolera hasta 45° de inclinación hacia adelante
+    const BACK_DRIFT_THRESHOLD = 170.0; // Tolera solo 10° de inclinación hacia atrás (hiperextensión)
+
+    const shoulderX = shoulder.x * width;
+    const hipX = hip.x * width;
+
+    let backBalanced = false;
+
+    // 1. Determinar la dirección física del balanceo usando la orientación del usuario
+    if (isFacingLeft) {
+      // Si mira a la izquierda, la espalda está hacia la derecha (+X).
+      // Si la cadera está a la izquierda del hombro, el torso está inclinado hacia atrás.
+      backBalanced = hipX < shoulderX;
+    } else {
+      // Si mira a la derecha, la espalda está hacia la izquierda (-X).
+      backBalanced = hipX > shoulderX;
+    }
+
+    // 2. Evaluar el ángulo contra el umbral correspondiente a la dirección
+    if (backBalanced) {
+      // Evaluamos el balanceo hacia atrás (mucho más estricto)
+      if (separationAngle < BACK_DRIFT_THRESHOLD) {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "TRICEP_EXTENSION",
+          error: "FORWARD_BACK",
+          message: "No te balancees hacia atrás",
+        };
+      }
+    } else {
+      // Evaluamos el balanceo hacia adelante (más permisivo)
+      if (separationAngle < FRONT_DRIFT_THRESHOLD) {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "TRICEP_EXTENSION",
+          error: "FORWARD_FRONT",
+          message: "No te balancees hacia adelante",
+        };
+      }
+    }
+
+    return null;
+  };
+
+  // Método para analizar la posición del codo y detectar si se está llevando hacia adelante o hacia atrás
+  private checkPosicionCodo = (
+    hip: NormalizedLandmark,
+    shoulder: NormalizedLandmark,
+    elbow: NormalizedLandmark,
+    isFacingLeft: boolean,
+    width: number,
+    height: number,
+  ): ExerciseFeedback | null => {
+    // Calcular el ángulo de separación entre la cadera y el codo respecto al hombro
+    const separationAngle = this.calculateAngle(hip, shoulder, elbow, width, height);
+    const DRIFT_THRESHOLD = 22.5;
+    // Si el ángulo de separación es mayor a 22.5 grados, consideramos que el codo se está moviendo fuera del plano ideal
+    if (separationAngle > DRIFT_THRESHOLD) {
+      const shoulderX = shoulder.x * width;
+      const elbowX = elbow.x * width;
+
+      let isForward = false;
+
+      if (isFacingLeft) {
+        isForward = elbowX < shoulderX; // Si el usuario mira a la izquierda, el codo adelante es cuando su coordenada X es menor que la del hombro
+      } else {
+        isForward = elbowX > shoulderX; // Si el usuario mira a la derecha, el codo adelante es cuando su coordenada X es mayor que la del hombro
+      }
+
+      if (isForward) {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "TRICEP_EXTENSION",
+          error: "ELBOW_FRONT",
+          message: "No lleves el codo hacia adelante",
+        };
+      } else {
+        return {
+          errorType: "TECHNICAL",
+          exercise: "TRICEP_EXTENSION",
+          error: "ELBOW_BACK",
+          message: "No lleves el codo hacia atrás",
+        };
+      }
+    }
+
+    return null;
+  };
+
+  protected getRequiredJoints(): string[] {
+    return ["HIP", "SHOULDER", "ELBOW", "WRIST"];
+  }
+
+  protected getInactivityReference(joints: Record<string, NormalizedLandmark>): number {
+    return joints.wrist.y;
+  }
+
+  protected analyzeTechnical(
+    joints: Record<string, NormalizedLandmark>,
+    facingLeft: boolean,
+    width: number,
+    height: number,
+  ): TechnicalAnalysisResult {
+    const { shoulder, elbow, wrist, hip } = joints;
+
+    // 1. ROM
+    const rom = this.checkROM(shoulder, elbow, wrist, width, height);
+    if (rom != null) {
+      return { feedback: rom, shouldDebounce: false };
+    }
+
+    // 2. Balanceo (debounced)
+    const balanceo = this.checkBalanceo(
+      hip,
+      shoulder,
+      facingLeft,
+      width,
+      height,
+    );
+    if (balanceo != null) {
+      return { feedback: balanceo, shouldDebounce: true };
+    }
+
+    // 3. Codo (debounced)
+    const posicionCodo = this.checkPosicionCodo(
+      hip,
+      shoulder,
+      elbow,
+      facingLeft,
+      width,
+      height,
+    );
+    if (posicionCodo != null) {
+      return { feedback: posicionCodo, shouldDebounce: true };
+    }
+
+    return null;
+  }
+}
+
 export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
   private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
   private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
