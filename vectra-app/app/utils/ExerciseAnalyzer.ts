@@ -264,7 +264,7 @@ export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
   private prevAngle: number = 0; // Ángulo del frame anterior
   private minAngleReached: number = 180; // Máxima extensión del brazo (abajo)
   private maxAngleReached: number = 0; // Máxima flexión del brazo (arriba)
-  private readonly ROM_EXTENSION_TARGET = 140; // El brazo debe bajar hasta al menos 140°
+  private readonly ROM_EXTENSION_TARGET = 135; // El brazo debe bajar hasta al menos 135°
   private readonly ROM_FLEXION_TARGET = 85; // El brazo debe subir hasta al menos 85°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
@@ -301,7 +301,7 @@ export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
         }
       } else if (this.currentErrorFase === "CONCENTRIC") {
         // Error: No bajó suficiente.
-        // Salida: El usuario corrigió y bajó más (>= 140).
+        // Salida: El usuario corrigió y bajó más (>= 135).
         if (currentAngle >= this.ROM_EXTENSION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.concentricSuccess = true;
@@ -411,7 +411,7 @@ export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
     );
 
     // Umbrales de tolerancia (180° es estar perfectamente recto)
-    const FRONT_DRIFT_THRESHOLD = 155.0; // Tolera hasta 25° de inclinación hacia adelante
+    const FRONT_DRIFT_THRESHOLD = 150.0; // Tolera hasta 30° de inclinación hacia adelante
     const BACK_DRIFT_THRESHOLD = 170.0; // Tolera solo 10° de inclinación hacia atrás (hiperextensión)
 
     const shoulderX = shoulder.x * width;
@@ -447,7 +447,7 @@ export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
           errorType: "TECHNICAL",
           exercise: "TRICEP_EXTENSION",
           error: "FORWARD_FRONT",
-          message: "No te balancees hacia adelante",
+          message: "No te balancees demasiado hacia adelante",
         };
       }
     }
