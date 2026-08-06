@@ -411,7 +411,7 @@ export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
     );
 
     // Umbrales de tolerancia (180° es estar perfectamente recto)
-    const FRONT_DRIFT_THRESHOLD = 145.0; // Tolera hasta 35° de inclinación hacia adelante
+    const FRONT_DRIFT_THRESHOLD = 155.0; // Tolera hasta 25° de inclinación hacia adelante
     const BACK_DRIFT_THRESHOLD = 170.0; // Tolera solo 10° de inclinación hacia atrás (hiperextensión)
 
     const shoulderX = shoulder.x * width;
