@@ -265,7 +265,7 @@ export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
   private minAngleReached: number = 180; // Máxima extensión del brazo (abajo)
   private maxAngleReached: number = 0; // Máxima flexión del brazo (arriba)
   private readonly ROM_EXTENSION_TARGET = 135; // El brazo debe bajar hasta al menos 135°
-  private readonly ROM_FLEXION_TARGET = 65; // El brazo debe subir hasta al menos 65°
+  private readonly ROM_FLEXION_TARGET = 55; // El brazo debe subir hasta al menos 55°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
   private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
@@ -286,7 +286,7 @@ export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
     if (this.currentErrorFase !== null) {
       if (this.currentErrorFase === "ECCENTRIC") {
         // Error: No subió suficiente.
-        // Salida: El usuario corrigió y subió más (<= 65).
+        // Salida: El usuario corrigió y subió más (<= 55).
         if (currentAngle <= this.ROM_FLEXION_TARGET) {
           this.currentErrorFase = null; // Error resuelto
           this.excentricSuccess = true;
