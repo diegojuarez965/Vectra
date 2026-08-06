@@ -12,6 +12,7 @@ import {
   Square,
   XCircle,
   Timer,
+  Lightbulb,
 } from "lucide-react";
 import Scanner from "@/app/components/users/Scanner";
 import { ExerciseFeedback, type Exercise } from "@/app/lib/definitions";
@@ -236,10 +237,14 @@ export default function LiveScanner({
           <h2 className="text-3xl font-bold text-foreground mb-2">
             Listo para Entrenar
           </h2>
-          <p className="text-foreground/80 mb-6">
-            Asegúrate de tener buena iluminación y que tu cuerpo sea visible en
-            la cámara.
-          </p>
+          <div className="flex justify-center mb-8 mt-8">
+            <div className="flex items-center gap-2 bg-foreground/5 py-2 px-4 border border-foreground/10 rounded-xl w-max">
+              <Lightbulb className="w-14 h-14 sm:w-11 sm:h-11 text-primary" />
+              <span className="text-sm font-medium text-foreground">
+                Para resultados más fiables, la cámara debe estar a la altura de la cintura a una distancia aproximada de 2 metros
+              </span>
+            </div>
+          </div>
           <div className="flex justify-center mb-8">
             <div className="flex items-center gap-2 bg-foreground/5 py-2 px-4 border border-foreground/10 rounded-xl w-max">
               <Timer className="w-5 h-5 text-primary" />
