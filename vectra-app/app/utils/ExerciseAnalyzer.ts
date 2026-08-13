@@ -53,6 +53,11 @@ export type TechnicalAnalysisResult =
 
 export abstract class BaseExerciseAnalyzer {
   public repetitionCounter = 0; // Contador de repeticiones
+  protected currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
+  protected currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
+  protected prevAngle: number = 0; // Ángulo del frame anterior
+  protected minAngleReached: number = 180; // Minimo ángulo alcanzado
+  protected maxAngleReached: number = 0; // Maximo ángulo alcanzado
   protected excentricSuccess = false; // La fase excéntrica se completó correctamente
   protected concentricSuccess = false; // La fase concéntrica se completó correctamente
 
@@ -259,11 +264,6 @@ export abstract class BaseExerciseAnalyzer {
 }
 
 export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
-  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
-  private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
-  private prevAngle: number = 0; // Ángulo del frame anterior
-  private minAngleReached: number = 180; // Máxima extensión del brazo (abajo)
-  private maxAngleReached: number = 0; // Máxima flexión del brazo (arriba)
   private readonly ROM_EXTENSION_TARGET = 135; // El brazo debe bajar hasta al menos 135°
   private readonly ROM_FLEXION_TARGET = 85; // El brazo debe subir hasta al menos 85°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
@@ -552,11 +552,6 @@ export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
 }
 
 export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
-  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
-  private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
-  private prevAngle: number = 0; // Ángulo del frame anterior
-  private minAngleReached: number = 180; // Máxima flexión (abajo)
-  private maxAngleReached: number = 0; // Máxima extensión (arriba)
   private barErrorActive: boolean = false; // Indica si la barra está alejada del cuerpo
   private lumbarErrorActive: boolean = false; // Indica si hay hiperextensión lumbar
   private kneeOverflexionActive: boolean = false; // Indica si hay sobre-flexión de rodillas
@@ -889,11 +884,6 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
 }
 
 export class SquatAnalyzer extends BaseExerciseAnalyzer {
-  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
-  private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
-  private prevAngle: number = 0; // Ángulo del frame anterior
-  private minAngleReached: number = 180; // Máxima flexión (abajo)
-  private maxAngleReached: number = 0; // Máxima extensión (arriba)
   private readonly ROM_EXTENSION_TARGET = 135; // La cadera debe subir hasta al menos 135°
   private readonly ROM_FLEXION_TARGET = 90; // La cadera debe bajar hasta al menos 90°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
@@ -1154,11 +1144,6 @@ export class SquatAnalyzer extends BaseExerciseAnalyzer {
 }
 
 export class BicepCurlAnalyzer extends BaseExerciseAnalyzer {
-  private prevAngle: number = 0; // Ángulo del frame anterior
-  private currentPhase: Phase = "NEUTRAL"; // Fase actual del movimiento
-  private currentErrorFase: Phase | null = null; // En qué fase se detectó el error actual
-  private minAngleReached: number = 180; // Máxima flexión (arriba)
-  private maxAngleReached: number = 0; // Máxima extensión (abajo)
   private readonly ROM_EXTENSION_TARGET = 135; // El brazo debe bajar hasta al menos 135°
   private readonly ROM_FLEXION_TARGET = 75; // El brazo debe subir hasta al menos 75°
   private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
