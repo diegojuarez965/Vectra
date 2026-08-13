@@ -684,7 +684,7 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
     const driftDistance = Math.abs(wrist.x - knee.x) * width;
 
     // 3. Definir umbrales dinámicos basados en la longitud del torso
-    const MAX_DRIFT_THRESHOLD = torsoLength * 0.30; // Umbral de alerta (22% del torso)
+    const MAX_DRIFT_THRESHOLD = torsoLength * 0.30; // Umbral de alerta (30% del torso)
     const MIN_DRIFT_THRESHOLD = torsoLength * 0.20; // Umbral de histéresis para apagar la alerta
 
     // Modo bloqueo
