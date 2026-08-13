@@ -60,6 +60,8 @@ export abstract class BaseExerciseAnalyzer {
   protected maxAngleReached: number = 0; // Maximo ángulo alcanzado
   protected excentricSuccess = false; // La fase excéntrica se completó correctamente
   protected concentricSuccess = false; // La fase concéntrica se completó correctamente
+  protected readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
+  protected readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
   // Variables para debounce de errores
   protected pendingFeedback: ExerciseFeedback | null = null; // Feedback pendiente de confirmar
@@ -266,8 +268,6 @@ export abstract class BaseExerciseAnalyzer {
 export class TricepExtensionAnalyzer extends BaseExerciseAnalyzer {
   private readonly ROM_EXTENSION_TARGET = 135; // El brazo debe bajar hasta al menos 135°
   private readonly ROM_FLEXION_TARGET = 85; // El brazo debe subir hasta al menos 85°
-  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
-  private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
@@ -557,8 +557,6 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
   private kneeOverflexionActive: boolean = false; // Indica si hay sobre-flexión de rodillas
   private readonly ROM_EXTENSION_TARGET = 160; // El torso debe subir hasta al menos 160°
   private readonly ROM_FLEXION_TARGET = 90; // El torso debe bajar hasta al menos 90°
-  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
-  private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(currentAngle: number): ExerciseFeedback | null {
@@ -886,8 +884,6 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
 export class SquatAnalyzer extends BaseExerciseAnalyzer {
   private readonly ROM_EXTENSION_TARGET = 135; // La cadera debe subir hasta al menos 135°
   private readonly ROM_FLEXION_TARGET = 90; // La cadera debe bajar hasta al menos 90°
-  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
-  private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
   private kneeLocked = false; // Las rodillas no se deben bloquear
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
@@ -1146,8 +1142,6 @@ export class SquatAnalyzer extends BaseExerciseAnalyzer {
 export class BicepCurlAnalyzer extends BaseExerciseAnalyzer {
   private readonly ROM_EXTENSION_TARGET = 135; // El brazo debe bajar hasta al menos 135°
   private readonly ROM_FLEXION_TARGET = 75; // El brazo debe subir hasta al menos 75°
-  private readonly MOVEMENT_THRESHOLD = 10; // Histéresis para detectar cambio de dirección
-  private readonly MIN_AMPLITUDE_THRESHOLD = 40; // Mínimo 40 grados de recorrido para validar
 
   // Método para analizar el rango de movimiento (ROM) y detectar errores de amplitud en la fase concéntrica y excéntrica
   private checkROM(
