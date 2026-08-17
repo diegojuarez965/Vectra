@@ -20,23 +20,23 @@ export async function POST(request: Request) {
 
     if (userID) {
       try {
-        // 1. Obtener repeticiones del usuario agrupadas por ejercicio y fecha (día)
-        const repetitions = await sql`
-          SELECT exercise, TO_CHAR(date, 'YYYY-MM-DD') as date_str, SUM(count) as reps_count
-          FROM repetitions
-          WHERE user_id = ${userID}
-          GROUP BY exercise, date_str
-          ORDER BY date_str DESC
-        `;
-
-        // 2. Obtener feedbacks (errores) del usuario agrupados por ejercicio, error y fecha (día)
-        const feedbacks = await sql`
-          SELECT exercise, error, TO_CHAR(date, 'YYYY-MM-DD') as date_str, COUNT(*) as error_count
-          FROM feedbacks
-          WHERE user_id = ${userID}
-          GROUP BY exercise, error, date_str
-          ORDER BY date_str DESC
-        `;
+        // 1. Obtener repeticiones y feedbacks en paralelo
+        const [repetitions, feedbacks] = await Promise.all([
+          sql`
+            SELECT exercise, TO_CHAR(date, 'YYYY-MM-DD') as date_str, SUM(count) as reps_count
+            FROM repetitions
+            WHERE user_id = ${userID}
+            GROUP BY exercise, date_str
+            ORDER BY date_str DESC
+          `,
+          sql`
+            SELECT exercise, error, TO_CHAR(date, 'YYYY-MM-DD') as date_str, COUNT(*) as error_count
+            FROM feedbacks
+            WHERE user_id = ${userID}
+            GROUP BY exercise, error, date_str
+            ORDER BY date_str DESC
+          `
+        ]);
 
         // Agrupación estructurada por día
         type DayData = {
