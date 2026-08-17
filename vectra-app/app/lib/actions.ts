@@ -768,9 +768,13 @@ export async function submitChatbotMessage(message: string) {
 
   // Enviamos la solicitud
   try {
+    const cookieHeader = (await headers()).get("cookie");
     const res = await fetch(`${baseUrl}/api/chatbox`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      },
       body: JSON.stringify({ message: safeMessage }),
     });
 
