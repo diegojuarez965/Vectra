@@ -52,7 +52,25 @@ const customCaching: RuntimeCaching[] = [
     }),
   },
 
-  // 2. Rutas de la API
+  // 2. Fotos de perfil del usuario (Cloudinary)
+  // Estrategia: Network First (para mostrar siempre la última foto subida si hay conexión)
+  {
+    matcher: ({ url }) => url.hostname === "res.cloudinary.com",
+    handler: new NetworkFirst({
+      cacheName: "vectra-profile-pictures",
+      plugins: [
+        new CacheableResponsePlugin({
+          statuses: [0, 200],
+        }),
+        new ExpirationPlugin({
+          maxEntries: 20,
+          maxAgeSeconds: 7 * 24 * 60 * 60, // Mantenemos en caché por 7 días
+        }),
+      ],
+    }),
+  },
+
+  // 3. Rutas de la API
   // Estrategia: Network First
   {
     matcher: ({ url }) => url.pathname.startsWith("/api/"),
@@ -68,7 +86,7 @@ const customCaching: RuntimeCaching[] = [
     }),
   },
 
-  // 3. Componentes internos de Next.js, imágenes y navegación
+  // 4. Componentes internos de Next.js, imágenes y navegación
   // Mantenemos la estrategia por defecto de Next.js.
   ...defaultCache,
 ];

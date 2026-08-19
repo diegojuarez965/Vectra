@@ -4,7 +4,7 @@ import { User } from "../../lib/definitions";
 import bcrypt from "bcryptjs";
 import { CreateUserSchema, EditUserSchema } from "@/app/lib/schemas";
 import { auth } from "@/auth";
-import { deleteImageFromS3 } from "@/app/lib/s3";
+import { deleteImageFromStorage } from "@/app/lib/storage";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -229,8 +229,8 @@ export async function handlerUpdateUser(req: Request) {
       const oldImageUrl =
         oldImageRecord.length > 0 ? oldImageRecord[0].image_url : null;
       if (oldImageUrl) {
-        deleteImageFromS3(oldImageUrl).catch((err) =>
-          console.error("Fallo borrando imagen antigua de S3", err),
+        deleteImageFromStorage(oldImageUrl).catch((err) =>
+          console.error("Fallo borrando imagen antigua de Firebase Storage", err),
         );
       }
 

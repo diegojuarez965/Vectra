@@ -3,7 +3,7 @@ import postgres from "postgres";
 import { User } from "@/app/lib/definitions";
 import { auth, unstable_update } from "@/auth";
 import { EditProfileSchema } from "@/app/lib/schemas";
-import { uploadImageToS3, deleteImageFromS3 } from "@/app/lib/s3";
+import { uploadImageToStorage, deleteImageFromStorage } from "@/app/lib/storage";
 import { v4 as uuidv4 } from "uuid";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
@@ -81,11 +81,11 @@ export async function PUT(req: NextRequest) {
       // Identificamos la imagen anterior
       const oldImageUrl = session.user.image;
 
-      imageUrl = await uploadImageToS3(buffer, fileName, file.type);
+      imageUrl = await uploadImageToStorage(buffer, fileName);
 
-      // Eliminamos la imagen anterior de S3
+      // Eliminamos la imagen anterior de Cloudinary
       if (oldImageUrl) {
-        deleteImageFromS3(oldImageUrl).catch((err) =>
+        deleteImageFromStorage(oldImageUrl).catch((err) =>
           console.error(
             "Fallo silencioso omitido borrando imagen antigua",
             err,

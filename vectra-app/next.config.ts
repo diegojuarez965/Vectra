@@ -24,12 +24,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "cdn-icons-png.flaticon.com",
       },
+      // Hostname antiguo de AWS S3
       {
         protocol: "https",
         hostname: "amzn-s3-vectra.s3.sa-east-1.amazonaws.com",
+      },
+      // Hostname nuevo de Cloudinary
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
       },
     ],
   },
 };
 
-export default withSerwist(nextConfig);
+export default withSerwist(nextConfig as Parameters<typeof withSerwist>[0]);

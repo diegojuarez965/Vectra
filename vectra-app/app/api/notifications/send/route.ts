@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import postgres from "postgres";
-import admin from "firebase-admin";
-
-// Inicializamos Firebase Admin SDK si no lo hemos hecho en esta ejecución
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
-  });
-}
+import admin from "@/app/lib/firebase-admin";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
