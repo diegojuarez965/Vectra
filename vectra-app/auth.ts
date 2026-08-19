@@ -5,7 +5,6 @@ import { z } from "zod";
 import type { User } from "@/app/lib/definitions";
 import bcrypt from "bcryptjs";
 import postgres from "postgres";
-import constants from "constants";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -53,12 +52,12 @@ export const { auth, signIn, signOut, unstable_update } = NextAuth({
     ...authConfig.callbacks,
     async jwt({ token, user, trigger, session }) {
       // 1. Ejecutar callback original para inicializar o procesar actualizaciones locales
-      constants updatedToken = await authConfig.callbacks.jwt({
-      token,
-      user,
-      trigger,
-      session,
-    });
+      const updatedToken = await authConfig.callbacks.jwt({
+        token,
+        user,
+        trigger,
+        session,
+      });
 
       // 2. Si hay sesión y el token contiene el id del usuario, refrescamos la información desde la base de datos
       if (updatedToken?.id) {
