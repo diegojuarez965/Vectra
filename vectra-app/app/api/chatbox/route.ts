@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
 import postgres from "postgres";
 import { auth } from "@/auth";
 import { EXERCISE_LABELS, ERROR_LABELS } from "@/app/lib/definitions";
 
-const ai = new GoogleGenAI({ apiKey: process.env.AI_API_KEY });
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 export async function POST(request: Request) {
   try {
     const { message } = await request.json();
-    
+
     // Obtener la sesión del usuario
     const session = await auth();
     const userID = session?.user?.id;
@@ -115,15 +113,31 @@ A continuación se presenta información sobre el progreso y rendimiento del usu
 
 ${userContext}`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: message,
-      config: {
-        systemInstruction,
-      },
+    const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL;
+    const OLLAMA_MODEL = process.env.OLLAMA_MODEL;
+
+    const aiResponse = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          { role: "system", content: systemInstruction },
+          { role: "user", content: message },
+        ],
+        stream: false,
+      }),
     });
 
-    const data = response.text;
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error("Error en respuesta de Ollama:", errorText);
+      throw new Error(`Error en Ollama API (${aiResponse.status}): ${errorText}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const data = aiData.message?.content || "";
+    console.log(`Modelo ${OLLAMA_MODEL} ejecutado satisfactoriamente`);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Error en API Chatbox:", error);
