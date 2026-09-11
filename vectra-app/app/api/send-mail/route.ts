@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       },
     });
 
-    const resetLink = `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"}/reset-password/${token}`;
+    const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password/${token}`;
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
