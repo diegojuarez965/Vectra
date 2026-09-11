@@ -1,6 +1,8 @@
 import { unstable_noStore as noStore } from "next/cache";
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+const baseUrl = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : "http://localhost:3000";
 
 // Obtener estado de modo mantenimiento
 export async function getMaintenanceMode() {
