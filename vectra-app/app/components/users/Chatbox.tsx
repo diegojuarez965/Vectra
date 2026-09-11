@@ -16,7 +16,7 @@ export default function Chatbox({ avatar }: { avatar: string }) {
     {
       role: "bot",
       content:
-        "¡Hola! Soy tu asistente fitness (llama3.2:1b) de Vectra. ¿En qué puedo ayudarte hoy?",
+        "¡Hola! Soy tu asistente fitness llama3.2:1b de Vectra. ¿En qué puedo ayudarte hoy?",
     },
   ]); // Estado para almacenar los mensajes
   const [input, setInput] = useState(""); // Estado para almacenar el mensaje de entrada
