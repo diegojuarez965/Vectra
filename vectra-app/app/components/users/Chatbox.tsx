@@ -10,13 +10,82 @@ interface ChatMessage {
   content: string;
 }
 
+function renderInlineFormatted(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-bold text-foreground">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
+
+function FormattedMessage({ content }: { content: string }) {
+  const lines = content.split("\n");
+
+  return (
+    <div className="space-y-1.5 leading-relaxed text-sm">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={idx} className="h-1" />;
+        }
+
+        // Encabezados (#, ##, ###)
+        if (trimmed.startsWith("#")) {
+          const headerText = trimmed.replace(/^#+\s*/, "");
+          return (
+            <h4 key={idx} className="font-bold text-foreground text-sm mt-2 mb-1">
+              {renderInlineFormatted(headerText)}
+            </h4>
+          );
+        }
+
+        // Viñetas (*, -, •)
+        if (
+          trimmed.startsWith("* ") ||
+          trimmed.startsWith("- ") ||
+          trimmed.startsWith("• ")
+        ) {
+          const bulletText = trimmed.replace(/^[*•-]\s*/, "");
+          return (
+            <div key={idx} className="flex gap-2 items-start pl-1">
+              <span className="text-primary font-bold select-none">•</span>
+              <span className="flex-1">{renderInlineFormatted(bulletText)}</span>
+            </div>
+          );
+        }
+
+        // Listas numeradas (1. , 2. )
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+        if (numMatch) {
+          return (
+            <div key={idx} className="flex gap-2 items-start pl-1">
+              <span className="text-primary font-semibold text-xs select-none min-w-4">
+                {numMatch[1]}.
+              </span>
+              <span className="flex-1">{renderInlineFormatted(numMatch[2])}</span>
+            </div>
+          );
+        }
+
+        return <p key={idx}>{renderInlineFormatted(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
 export default function Chatbox({ avatar }: { avatar: string }) {
   const [isOpen, setIsOpen] = useState(false); // Estado para controlar si el chat está abierto o cerrado
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "bot",
       content:
-        "¡Hola! Soy tu asistente fitness de Vectra. ¿En qué puedo ayudarte hoy?",
+        "¡Hola! 🏋️‍♂️ Soy tu asistente fitness de Vectra. ¿En qué puedo ayudarte hoy?",
     },
   ]); // Estado para almacenar los mensajes
   const [input, setInput] = useState(""); // Estado para almacenar el mensaje de entrada
@@ -108,7 +177,11 @@ export default function Chatbox({ avatar }: { avatar: string }) {
                 <div
                   className={`p-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-primary/10 text-foreground border border-primary/20" : "bg-foreground/5 text-foreground/90 border border-foreground/10"}`}
                 >
-                  {msg.content}
+                  {msg.role === "user" ? (
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  ) : (
+                    <FormattedMessage content={msg.content} />
+                  )}
                 </div>
               </div>
             ))}

@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
+import { getRelevantExerciseContext } from "@/app/lib/exerciseKnowledge";
 
 export async function POST(request: Request) {
   try {
     const { message } = await request.json();
 
+    const ragContext = getRelevantExerciseContext(message);
+
     const systemInstruction = `Eres Vectra AI, un experto en fitness, entrenamiento, biomecánica y nutrición deportiva. Tu función es proporcionar recomendaciones técnicas, consejos sobre ejercicios y orientación sobre nutrición deportiva.
 
 REGLAS DE RESPUESTA:
-- Responde siempre de manera técnica, profesional y estructurada.
-- Está estrictamente prohibido el uso de emojis en tus respuestas.
-- Si el usuario consulta sobre temas ajenos a tu área (fitness, entrenamiento o nutrición), declina la respuesta de manera educada y profesional, manteniendo siempre un formato de texto limpio.`;
+- Responde siempre de manera técnica, clara, motivadora y profesional.
+- Puedes utilizar emojis adecuados y amigables (ej: 🏋️‍♂️, 💪, 🎯, ⚠️, 📌) para hacer las explicaciones visuales y fáciles de leer.
+- Utiliza saltos de línea claros, viñetas y texto en negrita para estructurar las secciones de manera limpia.
+- Si el usuario consulta sobre temas ajenos a tu área (fitness, entrenamiento o nutrición), declina la respuesta de manera educada y profesional.${ragContext}`;
 
     const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL;
     const OLLAMA_MODEL = process.env.OLLAMA_MODEL;
@@ -23,6 +27,9 @@ REGLAS DE RESPUESTA:
           { role: "system", content: systemInstruction },
           { role: "user", content: message },
         ],
+        options: {
+          temperature: 0.2,
+        },
         stream: false,
       }),
     });
