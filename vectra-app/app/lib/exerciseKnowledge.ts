@@ -1,5 +1,6 @@
 export interface ExerciseKnowledge {
   name: string;
+  dbKey: string;
   keywords: string[];
   setup: string;
   execution: {
@@ -14,7 +15,8 @@ export interface ExerciseKnowledge {
 export const EXERCISE_KNOWLEDGE_BASE: Record<string, ExerciseKnowledge> = {
   biceps_curl: {
     name: "Curl de Bíceps (con mancuernas / barra)",
-    keywords: ["biceps", "bíceps", "curl de biceps", "curl de bíceps"],
+    dbKey: "BICEP_CURL",
+    keywords: ["biceps", "bíceps", "curl de biceps", "curl de bíceps", "curl"],
     setup: "De pie o sentado con la espalda recta, torso erguido y escapulas retraídas. Sujeta las mancuernas o barra con agarre supino (palmas mirando al frente). Codos alineados cerca de las costillas y pies a la anchura de los hombros.",
     execution: {
       concentric: "Flexiona los codos concentrando el esfuerzo en el bíceps sin mover ni adelantar los codos. Sube hasta la máxima contracción del bíceps sin elevar los hombros.",
@@ -34,6 +36,7 @@ export const EXERCISE_KNOWLEDGE_BASE: Record<string, ExerciseKnowledge> = {
   },
   squat: {
     name: "Sentadilla (Squat)",
+    dbKey: "SQUAT",
     keywords: ["sentadilla", "sentadillas", "squat", "squats", "cuadriceps", "cuádriceps"],
     setup: "Pies abiertos a la anchura de los hombros o ligeramente más, con las puntas apuntando hacia afuera unos 15-30°. Barra apoyada firmemente sobre el trapecio (barra alta) o deltoides posterior (barra baja). Abdomen activado (bracing) y mirada al frente/abajo en diagonal.",
     execution: {
@@ -54,6 +57,7 @@ export const EXERCISE_KNOWLEDGE_BASE: Record<string, ExerciseKnowledge> = {
   },
   deadlift: {
     name: "Peso Muerto (Deadlift)",
+    dbKey: "DEADLIFT",
     keywords: ["peso muerto", "deadlift", "isquios", "isquiotibiales"],
     setup: "Barra sobre el medio del pie (a unos 2-3 cm de las espinillas). Pies a la anchura de las caderas. Inclínate en bisagra de cadera y sujeta la barra justo por fuera de las piernas. Flexiona rodillas hasta tocar la barra con las espinillas sin empujarla hacia adelante. Activa los dorsales ('encajar los hombros en los bolsillos') y tensiona la barra antes de despegar.",
     execution: {
@@ -74,6 +78,7 @@ export const EXERCISE_KNOWLEDGE_BASE: Record<string, ExerciseKnowledge> = {
   },
   triceps_extension: {
     name: "Extensión de Tríceps",
+    dbKey: "TRICEP_EXTENSION",
     keywords: ["triceps", "tríceps", "extension de triceps", "extensión de tríceps"],
     setup: "Posición erguida o leve inclinación del torso. Codos flexionados, apuntando al frente o hacia abajo y fijos al torso. Hombros retraídos y estables.",
     execution: {
@@ -93,6 +98,28 @@ export const EXERCISE_KNOWLEDGE_BASE: Record<string, ExerciseKnowledge> = {
     ]
   }
 };
+
+/**
+ * Retorna las claves de DB (ej: 'BICEP_CURL') de los ejercicios detectados en el mensaje.
+ */
+export function getMatchedDbExerciseKeys(userMessage: string): string[] {
+  if (!userMessage) return [];
+  const normalizedMessage = userMessage.toLowerCase();
+  const matchedDbKeys: string[] = [];
+
+  for (const key in EXERCISE_KNOWLEDGE_BASE) {
+    const exercise = EXERCISE_KNOWLEDGE_BASE[key];
+    const isMatched = exercise.keywords.some((keyword) =>
+      normalizedMessage.includes(keyword.toLowerCase())
+    );
+
+    if (isMatched && !matchedDbKeys.includes(exercise.dbKey)) {
+      matchedDbKeys.push(exercise.dbKey);
+    }
+  }
+
+  return matchedDbKeys;
+}
 
 /**
  * Busca términos clave en la consulta del usuario y genera un contexto estructurado en formato RAG.
@@ -118,8 +145,7 @@ export function getRelevantExerciseContext(userMessage: string): string {
     return "";
   }
 
-  let context = "\n\nCONOCIMIENTO TÉCNICO VERIFICADO DE EJERCICIOS (RAG - VECTRA KNOWLEDGE BASE):\n";
-  context += "Utiliza la siguiente información biomecánica precisa para enriquecer tu respuesta técnica al usuario:\n\n";
+  let context = "Utiliza la siguiente información biomecánica precisa para enriquecer tu respuesta técnica al usuario:\n\n";
 
   matchedExercises.forEach((ex, idx) => {
     context += `### EJERCICIO ${idx + 1}: ${ex.name}\n`;
@@ -133,3 +159,4 @@ export function getRelevantExerciseContext(userMessage: string): string {
 
   return context;
 }
+

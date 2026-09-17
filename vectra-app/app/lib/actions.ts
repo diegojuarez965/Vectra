@@ -752,9 +752,12 @@ export async function sendGlobalNotification(
   }
 }
 
-export async function submitChatbotMessage(message: string) {
+export async function submitChatbotMessage(
+  message: string,
+  history?: { role: string; content: string }[]
+) {
   // Validamos los parámetros
-  const validatedData = SubmitChatbotMessageSchema.safeParse({ message });
+  const validatedData = SubmitChatbotMessageSchema.safeParse({ message, history });
 
   if (!validatedData.success) {
     console.error(
@@ -764,7 +767,7 @@ export async function submitChatbotMessage(message: string) {
     return { success: false, message: "Parámetros inválidos o corruptos." };
   }
 
-  const { message: safeMessage } = validatedData.data;
+  const { message: safeMessage, history: safeHistory } = validatedData.data;
 
   // Enviamos la solicitud
   try {
@@ -775,7 +778,7 @@ export async function submitChatbotMessage(message: string) {
         "Content-Type": "application/json",
         ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
-      body: JSON.stringify({ message: safeMessage }),
+      body: JSON.stringify({ message: safeMessage, history: safeHistory }),
     });
 
     if (!res.ok) {
