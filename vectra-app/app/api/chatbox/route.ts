@@ -3,9 +3,13 @@ import { getRelevantExerciseContext } from "@/app/lib/exerciseKnowledge";
 
 export async function POST(request: Request) {
   try {
-    const { message } = await request.json();
+    const { message, history } = await request.json();
 
-    const ragContext = getRelevantExerciseContext(message);
+    const combinedTextForRag = [
+      message,
+      ...(Array.isArray(history) ? history.slice(-4).map((m: { content: string }) => m.content) : [])
+    ].join(" ");
+    const ragContext = getRelevantExerciseContext(combinedTextForRag);
 
     const systemInstruction = `Eres Vectra AI, un experto en fitness, entrenamiento, biomecánica y nutrición deportiva. Tu función es proporcionar recomendaciones técnicas, consejos sobre ejercicios y orientación sobre nutrición deportiva.
 
@@ -16,15 +20,30 @@ REGLAS DE RESPUESTA:
 - Si el usuario consulta sobre temas ajenos a tu área (fitness, entrenamiento o nutrición), declina la respuesta de manera educada y profesional.${ragContext}`;
 
     const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL;
-    const OLLAMA_MODEL = process.env.OLLAMA_MODEL;
+    const OLLAMA_MODEL_LOCAL = process.env.OLLAMA_MODEL_LOCAL;
+
+    // Formatear el historial previo de conversación enviado por la interfaz
+    const formattedHistory = Array.isArray(history)
+      ? history
+        .filter((msg: { role: string; content: string }) => msg.content && !msg.content.startsWith("¡Hola! 🏋️‍♂️"))
+        .slice(-4) // Mantener las últimas 4 interacciones para un contexto fluido y ligero
+        .map((msg: { role: string; content: string }) => ({
+          role: msg.role === "bot" || msg.role === "assistant" ? "assistant" : "user",
+          content: msg.content,
+        }))
+      : [];
+
+    console.log("systemInstruction¸\n", systemInstruction);
+    console.log("formattedHistory\n", formattedHistory);
 
     const aiResponse = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: OLLAMA_MODEL,
+        model: OLLAMA_MODEL_LOCAL,
         messages: [
           { role: "system", content: systemInstruction },
+          ...formattedHistory,
           { role: "user", content: message },
         ],
         options: {

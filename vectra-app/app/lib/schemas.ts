@@ -97,4 +97,12 @@ export const ResetPasswordSchema = z
 // Esquema de envío de mensaje al chatbot
 export const SubmitChatbotMessageSchema = z.object({
   message: z.string().min(1, "El mensaje no puede estar vacío"),
+  history: z
+    .array(
+      z.object({
+        role: z.string(),
+        content: z.string(),
+      })
+    )
+    .optional(),
 });
