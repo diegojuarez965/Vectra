@@ -157,9 +157,6 @@ ${ragContext}`;
         }))
       : [];
 
-    console.log("systemInstruction¸\n", systemInstruction);
-    console.log("formattedHistory\n", formattedHistory);
-
     const aiResponse = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
