@@ -157,9 +157,6 @@ ${ragContext}`;
         }))
       : [];
 
-    console.log("System instruction: ", systemInstruction);
-    console.log("Formatted history: ", formattedHistory);
-
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
