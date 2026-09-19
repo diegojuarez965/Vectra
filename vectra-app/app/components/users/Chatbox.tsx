@@ -108,11 +108,13 @@ export default function Chatbox({ avatar }: { avatar: string }) {
     if (!input.trim() || isLoading) return;
 
     const userMsg = input.trim();
+    const currentHistory = [...messages];
+
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setIsLoading(true);
 
-    const res = await submitChatbotMessage(userMsg);
+    const res = await submitChatbotMessage(userMsg, currentHistory);
 
     if (res.success) {
       setMessages((prev) => [...prev, { role: "bot", content: res.message }]);

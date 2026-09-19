@@ -3,42 +3,54 @@ import { GoogleGenAI } from "@google/genai";
 import postgres from "postgres";
 import { auth } from "@/auth";
 import { EXERCISE_LABELS, ERROR_LABELS } from "@/app/lib/definitions";
+import { getMatchedDbExerciseKeys, getRelevantExerciseContext } from "@/app/lib/exerciseKnowledge";
 
 const ai = new GoogleGenAI({ apiKey: process.env.AI_API_KEY });
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 export async function POST(request: Request) {
   try {
-    const { message } = await request.json();
+    const { message, history } = await request.json();
 
-    // Obtener la sesión del usuario
+    // 1. Obtener la sesión e historial del usuario
     const session = await auth();
     const userID = session?.user?.id;
     const userName = session?.user?.name || "Atleta";
 
+    // Detectar ejercicios en el mensaje actual y en el historial reciente
+    const currentMsgKeys = getMatchedDbExerciseKeys(message);
+    let historyMsgKeys: string[] = [];
+    if (Array.isArray(history) && history.length > 0) {
+      const recentHistoryText = history.slice(-4).map((m: { content: string }) => m.content).join(" ");
+      historyMsgKeys = getMatchedDbExerciseKeys(recentHistoryText);
+    }
+
+    // Unión de claves de ejercicios sin duplicados
+    const matchedDbKeys = Array.from(new Set([...currentMsgKeys, ...historyMsgKeys]));
+
     let userContext = "";
 
-    if (userID) {
+    if (userID && matchedDbKeys.length > 0) {
       try {
-        // 1. Obtener repeticiones y feedbacks en paralelo
         const [repetitions, feedbacks] = await Promise.all([
           sql`
             SELECT exercise, TO_CHAR(date, 'YYYY-MM-DD') as date_str, SUM(count) as reps_count
             FROM repetitions
-            WHERE user_id = ${userID}
+            WHERE user_id = ${userID} AND exercise = ANY(${matchedDbKeys})
             GROUP BY exercise, date_str
             ORDER BY date_str DESC
           `,
           sql`
             SELECT exercise, error, TO_CHAR(date, 'YYYY-MM-DD') as date_str, COUNT(*) as error_count
             FROM feedbacks
-            WHERE user_id = ${userID}
+            WHERE user_id = ${userID} AND exercise = ANY(${matchedDbKeys})
             GROUP BY exercise, error, date_str
             ORDER BY date_str DESC
           `
         ]);
 
-        // Agrupación estructurada por día
+        userContext = `Información de progreso del usuario actual (Nombre: ${userName}):\n`;
+
         type DayData = {
           reps: { [exercise: string]: number };
           errors: { [exercise: string]: { [error: string]: number } };
@@ -64,18 +76,19 @@ export async function POST(request: Request) {
           historyMap[date].errors[f.exercise][f.error] = Number(f.error_count);
         });
 
-        userContext = `Información de progreso del usuario actual (Nombre: ${userName}):\n`;
         const dates = Object.keys(historyMap).sort((a, b) => b.localeCompare(a));
 
         if (dates.length === 0) {
           userContext += "- No hay registros de entrenamientos o ejercicios en ningún día todavía.\n";
         } else {
-          userContext += "Historial de actividades y rendimiento día a día:\n";
           dates.forEach((date) => {
             const dayInfo = historyMap[date];
-            userContext += `- **Día ${date}**:\n`;
+            const [year, month, day] = date.split("-").map(Number);
+            const dateObj = new Date(year, month - 1, day);
+            const humanDate = dateObj.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 
-            // Obtener todos los ejercicios registrados para este día
+            userContext += `- **Día ${humanDate} (${date})**:\n`;
+
             const exercises = new Set([
               ...Object.keys(dayInfo.reps),
               ...Object.keys(dayInfo.errors),
@@ -88,13 +101,15 @@ export async function POST(request: Request) {
 
               const errs = dayInfo.errors[ex];
               if (errs && Object.keys(errs).length > 0) {
-                const errList = Object.entries(errs)
+                const sortedErrs = Object.entries(errs).sort((a, b) => b[1] - a[1]);
+
+                const errList = sortedErrs
                   .map(([errKey, count]) => {
                     const errorName = ERROR_LABELS[errKey as keyof typeof ERROR_LABELS] || errKey;
                     return `"${errorName}" (${count} veces)`;
                   })
                   .join(", ");
-                userContext += ` Errores técnicos detectados: ${errList}.\n`;
+                userContext += ` Errores técnicos detectados (ordenados de mayor a menor frecuencia): ${errList}.\n`;
               } else {
                 userContext += ` Errores técnicos detectados: Ninguno.\n`;
               }
@@ -105,11 +120,17 @@ export async function POST(request: Request) {
         console.error("Error al consultar base de datos en chatbox route:", dbError);
         userContext = "Error temporal al recuperar los datos del historial de rendimiento del usuario.";
       }
-    } else {
-      userContext = "El usuario actual no ha iniciado sesión o no tiene datos registrados.";
     }
 
-    const systemInstruction = `Eres Vectra AI, un experto en fitness, entrenamiento, nutrición, biomecánica y musculación. Tu función es proporcionar recomendaciones técnicas sobre ejercicios, biomecánica y nutrición deportiva.
+    // 2. Obtener contexto de RAG combinando el mensaje actual y el historial reciente
+    const combinedTextForRag = [
+      message,
+      ...(Array.isArray(history) ? history.slice(-4).map((m: { content: string }) => m.content) : [])
+    ].join(" ");
+    const ragContext = getRelevantExerciseContext(combinedTextForRag);
+
+    // 3. Construir la instrucción del sistema
+    const systemInstruction = `Eres Vectra AI, un experto en fitness, entrenamiento, biomecánica y nutrición deportiva. Tu función es proporcionar recomendaciones técnicas sobre ejercicios, biomecánica y nutrición deportiva.
 
 REGLAS DE RESPUESTA:
 - Responde siempre de manera técnica, clara, motivadora y profesional.
@@ -117,15 +138,37 @@ REGLAS DE RESPUESTA:
 - Utiliza saltos de línea claros, viñetas y texto en negrita para estructurar las secciones de manera limpia.
 - Si el usuario consulta sobre temas ajenos a tu área (fitness, entrenamiento o nutrición), declina la respuesta de manera motivadora pero profesional.
 
-A continuación se presenta información sobre el progreso y rendimiento del usuario actual. Utilízala de manera natural para responder sus preguntas (por ejemplo, si te pregunta cómo va, dale feedback basado en sus repeticiones y errores):
+${userContext}
+${ragContext}`;
 
-${userContext}`;
+    // Formatear el historial previo de conversación enviado por la interfaz para la API de Gemini
+    const formattedHistory = Array.isArray(history)
+      ? history
+        .filter(
+          (msg: { role: string; content: string }) =>
+            msg.content &&
+            !msg.content.startsWith("¡Hola! 🏋️‍♂️") &&
+            msg.content.trim() !== message.trim()
+        )
+        .slice(-4) // Mantener las últimas 4 interacciones para un contexto fluido y ligero
+        .map((msg: { role: string; content: string }) => ({
+          role: msg.role === "bot" || msg.role === "assistant" ? "model" : "user",
+          parts: [{ text: msg.content }],
+        }))
+      : [];
+
+    console.log("System instruction: ", systemInstruction);
+    console.log("Formatted history: ", formattedHistory);
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: message,
+      contents: [
+        ...formattedHistory,
+        { role: "user", parts: [{ text: message }] },
+      ],
       config: {
         systemInstruction,
+        temperature: 0.2,
       },
     });
 
