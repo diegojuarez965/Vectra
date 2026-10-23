@@ -220,7 +220,7 @@ export async function handlerUpdateUser(req: Request) {
       );
     }
 
-    // Si image delete es verdadero la eliminamos, sino actualizamos el resto
+    // Si image delete es verdadero la eliminamos, si no actualizamos el resto
     let result: User[];
     if (imageDelete) {
       const oldImageRecord = await sql<

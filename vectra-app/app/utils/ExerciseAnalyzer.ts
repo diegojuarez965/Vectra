@@ -751,7 +751,7 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
         this.lumbarErrorActive = false;
         return null;
       }
-      // Sino devolvemos el error
+      // Si no devolvemos el error
       return {
         errorType: "TECHNICAL",
         exercise: "DEADLIFT",
@@ -801,7 +801,7 @@ export class DeadliftAnalyzer extends BaseExerciseAnalyzer {
         this.kneeOverflexionActive = false;
         return null;
       }
-      // Sino devolvemos el error
+      // Si no devolvemos el error
       return {
         errorType: "TECHNICAL",
         exercise: "DEADLIFT",
